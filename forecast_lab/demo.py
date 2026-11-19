@@ -9,6 +9,7 @@ Routes:
   GET /api/showcase             one held-out favourable case and one failure from the frozen test evaluation
 """
 import json
+import socket
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -93,6 +94,9 @@ def _what_if(q):
 def serve(cfg, model_id, port=8765, host="127.0.0.1"):
     st, fam = load_state(cfg, model_id)
     svc = ReplayService(cfg, st, fam)
-    srv = ThreadingHTTPServer((host, port), make_handler(svc, cfg))
+    cls = ThreadingHTTPServer
+    if ":" in host:
+        cls = type("ThreadingHTTPServerV6", (ThreadingHTTPServer,), {"address_family": socket.AF_INET6})
+    srv = cls((host, port), make_handler(svc, cfg))
     print(f"demo on http://{host}:{port}/ model={model_id}")
     srv.serve_forever()

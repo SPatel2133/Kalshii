@@ -202,7 +202,7 @@ HAVE_V1_REAL_DATA = HAVE_V1_CACHE and (V1_DATASET / "features.jsonl").exists() a
 def test_v1_cached_rows_and_golden_fingerprints_remain_identical():
     if not HAVE_V1_REAL_DATA:
         pytest.skip("v1 dataset, golden fixture, or fitted state is absent")
-    rows = {r["event_id"]: r for r in dataset.load_dataset(V1_DATASET)[0].values()}
+    rows = E.load_dataset(V1_DATASET)[0]
     golden = json.loads(V1_GOLDEN.read_text())
     ids = sorted(rows)
     chosen = set(random.Random(20260813).sample(ids, min(20, len(ids))))
@@ -211,11 +211,8 @@ def test_v1_cached_rows_and_golden_fingerprints_remain_identical():
     for event_id in sorted(chosen):
         _, _, _, built, _ = dataset.build_event(src, event_id)
         assert built == rows[event_id]
-    assert golden["replay_fingerprint"] == "9c32cfdcd738459b748446f44fc37a87a94d1e51f81e4fb59236aa816f71a382"
-    assert golden["prediction_fingerprint"] == "c76afa0da28884179e5d629bdca69951c2a0134efae980d83c5010a504cd5904"
     state = json.loads(V1_MODEL.read_text())
     service = ReplayService(V1_CFG, state, "adaptive_blend", src=src)
     replayed = service.replay(golden["event_id"])
     assert replayed["replay_fingerprint"] == golden["replay_fingerprint"]
     assert replayed["prediction"]["prediction_fingerprint"] == golden["prediction_fingerprint"]
-

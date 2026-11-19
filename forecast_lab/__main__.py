@@ -7,7 +7,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import config as C, dataset, download, evaluation as E
+from . import config as C, dataset, download, evaluation as E, weather
 from .service import ReplayService, load_state, models_dir
 from .util import atomic_write, read_jsonl, sha256_bytes, write_json, write_jsonl
 
@@ -76,6 +76,10 @@ def cmd_download(args):
         src.mos_runs(d)
         d = (d.replace(day=1) + timedelta(days=32)).replace(day=1)
     print("mos cached")
+    if any(f.startswith("obs_") for f in cfg["weather"].get("features", ["nx"])):
+        for y in range(start.year, end.year + 1):
+            weather.fetch_asos(src.fetcher, cfg, y)  # raises on failure instead of silently zero observations
+        print("asos cached")
 
 
 def cmd_build(args):

@@ -37,12 +37,13 @@ class Sources:
         if key not in self._runs:
             rows, metas = [], []
             for dd in months:
-                if dd not in self._months:
+                if dd in self._months:
+                    r, m = self._months[dd]
+                else:
                     try:
-                        self._months[dd] = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
-                    except FetchError as e:
-                        self._months[dd] = ([], {"failure_class": e.failure_class})
-                r, m = self._months[dd]
+                        r, m = self._months[dd] = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
+                    except FetchError as e:  # not cached: the next window retries this month
+                        r, m = [], {"failure_class": e.failure_class}
                 rows += r
                 metas.append(m)
             self._runs = {key: (weather.index_runs(rows), metas)}  # keep only the latest month window

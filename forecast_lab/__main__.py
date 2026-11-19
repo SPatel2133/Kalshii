@@ -18,6 +18,8 @@ def _cfg(args):
 
 def cmd_audit(args):
     cfg = _cfg(args)
+    if args.series != cfg["series"]:
+        sys.exit(f"--series {args.series} does not match config series {cfg['series']}; use a config for that series")
     end = date.fromisoformat(args.end)
     start = end - timedelta(days=args.days - 1)
     ev, pages = download.load_catalogue(cfg, offline=args.offline)

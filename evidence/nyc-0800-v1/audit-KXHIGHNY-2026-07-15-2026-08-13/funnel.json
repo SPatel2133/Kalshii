@@ -1,0 +1,9 @@
+{
+  "candidate_dates": 30,
+  "catalogue": 30,
+  "label_valid": 30,
+  "quote_complete": 30,
+  "reasons": {},
+  "rules_valid": 30,
+  "weather_available": 30
+}

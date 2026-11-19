@@ -65,8 +65,12 @@ def parse_mos_csv(text):
 
 
 def index_runs(rows):
-    runs = {}
+    runs, seen = {}, set()
     for r in rows:
+        k = (r["runtime"], r["ftime"], r["station"], r["model"])
+        if k in seen:
+            continue
+        seen.add(k)
         runs.setdefault(r["runtime"], []).append(r)
     for v in runs.values():
         v.sort(key=lambda r: r["ftime"])

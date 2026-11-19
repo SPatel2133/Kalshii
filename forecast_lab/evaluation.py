@@ -180,8 +180,12 @@ def gate_features(row, up, mkey):
 
 def predict_all(cfg, state, row):
     """Every family's prediction for one row with explicit fallback mode. Pure function of (state, row)."""
-    up = predict_upstream(cfg, state["upstream"], row)
     res = {}
+    if row.get("reasons"):
+        for f in PRIMARY_FAMILIES:
+            res[f] = {"mode": "unavailable", "reason": row["reasons"][0]}
+        return res
+    up = predict_upstream(cfg, state["upstream"], row)
     if "_error" in up:
         for f in PRIMARY_FAMILIES:
             res[f] = {"mode": "unavailable", "reason": up["_error"]}

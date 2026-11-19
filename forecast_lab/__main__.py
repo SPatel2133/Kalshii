@@ -137,7 +137,7 @@ def cmd_evaluate(args):
         ss, _ = E.summarize(cfg, ev_s, start, end)
         summ["strict_lag_sensitivity"] = {"lag_h": cfg["weather"]["lag_strict_h"], "common_cohort_n": ss["common_cohort_n"],
                                           "comparisons": ss["comparisons"],
-                                          "weather_selection_changed": sum(1 for e in ids_s if fs[e]["weather"] != feats[e]["weather"])}
+                                          "weather_selection_changed": sum(1 for e in ids_s if (fs[e]["weather"]["selected"] or {}).get("runtime_utc") != (feats[e]["weather"]["selected"] or {}).get("runtime_utc"))}
     write_json(out / "summary.json", summ)
     print(json.dumps({k: summ[k] for k in ("window", "common_cohort_n", "families", "comparisons", "funnel")}, indent=1))
 
@@ -159,6 +159,69 @@ def cmd_golden(args):
           "label": {k: rev["label"][k] for k in ("winner_bucket", "winner_ticker", "settled_value_f", "settlement_ts")}}
     write_json(Path("tests/fixtures/golden_KXHIGHNY-26AUG13.json"), fx)
     print(json.dumps(fx, indent=1))
+
+
+def cmd_report(args):
+    cfg = _cfg(args)
+    ev = Path(cfg["paths"]["evidence_dir"])
+    t = json.loads((ev / "eval-test" / "summary.json").read_text())
+    a = json.loads((ev / "eval-audit" / "summary.json").read_text())
+    man = json.loads((ev / "model_manifest.json").read_text())
+    fx = json.loads(Path("tests/fixtures/golden_KXHIGHNY-26AUG13.json").read_text())
+    rows = read_jsonl(ev / "eval-test" / "evaluation_rows.jsonl")
+    L = ["# Evidence report `nyc-0800-v1`", "",
+         f"Config sha256 `{t['config_sha256']}` · model state `{t['state_sha256']}` · fit boundary {man['fit_boundary']} · "
+         f"{man['n_dev_events']} development events.", "",
+         f"Predictions were sealed before scoring: `predictions.jsonl` sha256 `{t['predictions_sha256_sealed_before_scoring']}`.", "",
+         "## Answer", ""]
+    c = t["comparisons"]["adaptive_blend-fixed_blend"]
+    L += [f"On the untouched test block {t['window'][0]} → {t['window'][1]} (n = {t['common_cohort_n']} events, common cohort), "
+          f"the adaptive blend minus the fixed blend in mean log loss is **{c['mean_delta']:+.5f}** nats, "
+          f"95% block-bootstrap CI [{c['ci95_block'][0]:+.5f}, {c['ci95_block'][1]:+.5f}]: **{c['decision']}** "
+          f"(threshold {c['effect_threshold']}).", "",
+          "| Family | n | Log loss | Brier | P(winner) |", "|---|---|---|---|---|"]
+    for f, v in sorted(t["families"].items(), key=lambda x: x[1]["mean_log_loss"]):
+        L.append(f"| {f} | {v['n']} | {v['mean_log_loss']:.4f} | {v['mean_brier']:.4f} | {v['mean_p_winner']:.3f} |")
+    L += ["", "| Comparison (a − b) | Δ log loss | 95% CI (7-day) | 3-day | 14-day | Δ Brier | Decision |", "|---|---|---|---|---|---|---|"]
+    for k, v in t["comparisons"].items():
+        s3, s14 = v["sensitivity"]["3"], v["sensitivity"]["14"]
+        L.append(f"| {k} | {v['mean_delta']:+.5f} | [{v['ci95_block'][0]:+.5f}, {v['ci95_block'][1]:+.5f}] | "
+                 f"[{s3[0]:+.4f}, {s3[1]:+.4f}] | [{s14[0]:+.4f}, {s14[1]:+.4f}] | {v['mean_delta_brier']:+.5f} | {v['decision']} |")
+    sl = t.get("strict_lag_sensitivity")
+    if sl:
+        cs = sl["comparisons"]["adaptive_blend-fixed_blend"]
+        L += ["", f"Strict weather lag ({sl['lag_h']} h): weather selection changed on {sl['weather_selection_changed']} events; "
+              f"adaptive − fixed {cs['mean_delta']:+.5f} [{cs['ci95_block'][0]:+.5f}, {cs['ci95_block'][1]:+.5f}], {cs['decision']}."]
+    L += ["", f"Fitted parameters: fixed-blend market weight w = {man['fixed_blend']['w']:.3f}; coherent λ = {man['upstream']['lambda']}; "
+          f"correction promoted on validation = {man['correction']['validation']['promoted']}.", "",
+          "Likely interpretation (an inference, not tested here): by 08:00 the market already prices in the public MOS forecast. The OOF fit put all of the fixed blend's weight "
+          "on the coherent market model, and the regularized gate stays close to that constant, so neither blend can beat the market by the "
+          "declared effect size. This is a valid null result. The weather model alone is clearly worse than the market (see table).", "",
+          "## Coverage", "", "| Stage | Test | Audit (30 days to 2026-08-13) |", "|---|---|---|"]
+    for k in ("candidate_dates", "catalogue", "rules_valid", "quote_complete", "weather_available", "label_valid"):
+        L.append(f"| {k} | {t['funnel'][k]} | {a['funnel'][k]} |")
+    L += ["", f"Exclusion reasons (test): {t['funnel']['reasons'] or 'none'}; audit: {a['funnel']['reasons'] or 'none'}. "
+          "Whole development window: see `coverage` in the build output. The Weather Company regime (2026-08-14 →) is excluded as `other_regime`.", ""]
+    by = {}
+    for r in rows:
+        by.setdefault(r["event_id"], {})[r["family"]] = r
+    d = sorted((fr["adaptive_blend"]["log_loss"] - fr["market_raw"]["log_loss"], e) for e, fr in by.items()
+               if "log_loss" in fr.get("adaptive_blend", {}) and "log_loss" in fr.get("market_raw", {}))
+    L += ["## Held-out examples (adaptive_blend vs market_raw)", "",
+          f"* Favourable: `{d[0][1]}` Δ = {d[0][0]:+.4f}", f"* Failure: `{d[-1][1]}` Δ = {d[-1][0]:+.4f}", "",
+          "## Golden replay", "",
+          f"`{fx['event_id']}`, cutoff {fx['cutoff_utc']} (08:00 EDT). The weather run is {fx['weather']['runtime_utc']} (assumed available "
+          f"{fx['weather']['available_utc']}) with n_x {fx['weather']['mos_daytime_max_f']}°F. The model probabilities are "
+          + ", ".join(f"{b['bucket_id']} {p:.3f}" for b, p in zip(fx["buckets"], fx["probabilities"]))
+          + f". Revealed: winner {fx['label']['winner_bucket']}, CLI {fx['label']['settled_value_f']}°F. Replay fingerprint `{fx['replay_fingerprint']}`.",
+          "", f"Audit-window mean log loss (development use only): adaptive {a['families']['adaptive_blend']['mean_log_loss']:.4f}, "
+          f"fixed {a['families']['fixed_blend']['mean_log_loss']:.4f}, market_raw {a['families']['market_raw']['mean_log_loss']:.4f}.", "",
+          "## Files", "", "* `eval-test/predictions.jsonl`: per-event predictions.", "* `eval-test/evaluation_rows.jsonl`: per-event losses.",
+          "* `eval-test/summary.json`: aggregates.", "* `model_manifest.json`: split manifest and fit diagnostics.",
+          "* `audit-*/coverage.csv`, `audit-*/sources.json`: fetch parameters and payload checksums.", "",
+          "Reproduce: see the README."]
+    atomic_write(ev / "REPORT.md", "\n".join(L) + "\n")
+    print("\n".join(L))
 
 
 def cmd_replay(args):
@@ -198,6 +261,7 @@ def main(argv=None):
     r.add_argument("--config", dest="config"); r.set_defaults(f=cmd_replay)
     g = sub.add_parser("golden"); g.add_argument("--model", required=True); g.add_argument("--config", dest="config")
     g.set_defaults(f=cmd_golden)
+    rp = sub.add_parser("report"); rp.set_defaults(f=cmd_report)
     d = sub.add_parser("demo"); d.add_argument("--model", required=True); d.add_argument("--port", type=int, default=8765)
     d.add_argument("--config", dest="config"); d.set_defaults(f=cmd_demo)
     args = ap.parse_args(argv)

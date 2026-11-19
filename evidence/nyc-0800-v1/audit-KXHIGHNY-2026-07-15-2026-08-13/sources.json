@@ -1,0 +1,72 @@
+{
+  "candles_endpoint": "https://api.elections.kalshi.com/trade-api/v2/historical/markets/{ticker}/candlesticks",
+  "candles_query": {
+    "end_ts": "close_time",
+    "period_interval": 60,
+    "start_ts": "open_time"
+  },
+  "catalogue_endpoint": "https://api.elections.kalshi.com/trade-api/v2/historical/markets",
+  "catalogue_pages": [
+    {
+      "cursor": null,
+      "n": 1000,
+      "sha256": "113831906bd8e17c0836a062d77760856e36216e591510834fbdd6da7b09e6e4"
+    },
+    {
+      "cursor": "CgsI1bTDzgYQwMC8TRIWS1hISUdITlktMjZBUFIwNS1CNjQuNQ",
+      "n": 1000,
+      "sha256": "20ed1c0f0f4a5d6498ed80c5155e3b902d5efdb92b52653046f8d4c36c48f5af"
+    },
+    {
+      "cursor": "CgwIxd_SxwYQuP3P-wISFEtYSElHSE5ZLTI1T0NUMjAtVDY0",
+      "n": 1000,
+      "sha256": "1bdc34f4f93450fec07f0b23b669fe47d48f5e38e376cd365604e956f6d018d4"
+    },
+    {
+      "cursor": "CgwIwq3nwAYQ6OPaswISFEtYSElHSE5ZLTI1TUFZMDctVDY4",
+      "n": 1000,
+      "sha256": "02ad4d9390d084f0bdef7f8212ad4ea82f91983128b17c28e16dc517439faea3"
+    },
+    {
+      "cursor": "CgwI9PT2uQYQ2Jq-nQMSFktYSElHSE5ZLTI0Tk9WMjEtQjUwLjU",
+      "n": 1000,
+      "sha256": "327795cd2366968e0609360c7608749c5d96e9f97db59f9714d57b7cf6d52052"
+    },
+    {
+      "cursor": "CgwIqYOGswYQ6NbhwwESFEhJR0hOWS0yNEpVTjA3LUI4Ni41",
+      "n": 1000,
+      "sha256": "64808e061d23f1dbcdedee045f1c6f253990429491f2e81c08d2e770c9ff6c4d"
+    },
+    {
+      "cursor": "CgwI9KCRrAYQmMPRqgISFEhJR0hOWS0yM0RFQzIyLUIzOC41",
+      "n": 1000,
+      "sha256": "cde02891c86ef15993c20887ae4ac3582dd6a82bd0ae11f7093c23e1dafd6346"
+    },
+    {
+      "cursor": "CgwI_q-gpQYQyMDp5gISEkhJR0hOWS0yM0pVTDA4LVQ4OQ",
+      "n": 1000,
+      "sha256": "e227766c43e2c24d00016063042633fe1f81c37e39724959587fef9a0ffee1a5"
+    },
+    {
+      "cursor": "CgwIjZG1ngYQgIa5kwESFEhJR0hOWS0yM0pBTjIzLUI0Mi41",
+      "n": 1000,
+      "sha256": "379980832d41816aa19c7c71cd1f9d93bcdc6ca1d73862748538b90f4665c217"
+    },
+    {
+      "cursor": "CgwIhpn9lAYQyIK3xgISEkhJR0hOWS0yMkpVTjA4LVQ4NA",
+      "n": 586,
+      "sha256": "43ce76b695371730ad3d047382d434d8ed2d60a1d351ae07d21ffb92cade440a"
+    }
+  ],
+  "catalogue_query": {
+    "limit": 1000,
+    "series_ticker": "KXHIGHNY"
+  },
+  "failure_classes": [],
+  "mos_endpoint": "https://mesonet.agron.iastate.edu/cgi-bin/request/mos.py",
+  "mos_query": {
+    "model": "GFS",
+    "station": "KNYC",
+    "sts/ets": "monthly"
+  }
+}

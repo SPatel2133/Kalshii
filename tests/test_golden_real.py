@@ -48,7 +48,9 @@ def test_explicit_reveal(svc):
 def test_what_if_and_exploratory(svc):
     fx = json.loads(FX.read_text())
     base = svc.replay(fx["event_id"])
-    w = svc.replay(fx["event_id"], weather_delay_h=12)
+    w12 = svc.replay(fx["event_id"], weather_delay_h=12)  # 00Z run no longer available: falls back to an older run
+    assert w12["weather"]["selected"]["runtime_utc"] < fx["weather"]["runtime_utc"]
+    w = svc.replay(fx["event_id"], weather_delay_h=30)
     assert w["what_if"] and w["weather"]["status"] == "unavailable"
     assert w["prediction"]["mode"] == "source_only:market"
     q = svc.replay(fx["event_id"], drop_last_quote=True)

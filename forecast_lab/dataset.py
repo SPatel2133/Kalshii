@@ -35,7 +35,7 @@ class Sources:
         if key not in self._runs:
             rows = []
             metas = []
-            for dd in {d - timedelta(days=1), d}:
+            for dd in sorted({date(x.year, x.month, 1) for x in (d - timedelta(days=1), d)}):
                 try:
                     r, m = weather.fetch_mos(self.fetcher, self.cfg, date(dd.year, dd.month, 1), date(dd.year, dd.month, 1))
                     rows += r

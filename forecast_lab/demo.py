@@ -74,9 +74,9 @@ def make_handler(svc, cfg):
                 if u.path == "/api/threshold":
                     lo = int(q["lo"]) if q.get("lo") not in (None, "") else None
                     hi = int(q["hi"]) if q.get("hi") not in (None, "") else None
-                    return self._send(200, svc.threshold(q["event"], lo, hi, q.get("as_of", "08:00")))
+                    return self._send(200, svc.threshold(q["event"], lo, hi, q.get("as_of", "08:00"), **_what_if(q)))
                 if u.path == "/api/reveal":
-                    return self._send(200, svc.reveal(q["event"]))
+                    return self._send(200, svc.reveal(q["event"], q.get("as_of", "08:00"), **_what_if(q)))
                 if u.path == "/api/showcase":
                     return self._send(200, showcase())
                 return self._send(404, {"error": "not found"})
@@ -84,6 +84,10 @@ def make_handler(svc, cfg):
                 return self._send(400, {"error": f"{type(ex).__name__}: {ex}"})
 
     return H
+
+
+def _what_if(q):
+    return {"drop_last_quote": q.get("drop_last_quote") == "1", "weather_delay_h": float(q.get("weather_delay_h", 0) or 0)}
 
 
 def serve(cfg, model_id, port=8765, host="127.0.0.1"):

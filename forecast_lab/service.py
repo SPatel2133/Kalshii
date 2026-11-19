@@ -93,10 +93,12 @@ class ReplayService:
         assert_outcome_free(out)
         return out
 
-    def reveal(self, event_id):
-        d = contracts.event_date_from_ticker(event_id)
-        rules, label, wrec, row, prov = dataset.build_event(self.src, event_id)
-        res = {"event_id": event_id, "label": label}
+    def reveal(self, event_id, as_of=None, drop_last_quote=False, weather_delay_h=0.0):
+        r = self.replay(event_id, as_of or self.cfg["cutoff_local"], drop_last_quote, weather_delay_h)
+        rules, label, wrec, row, prov = dataset.build_event(self.src, event_id, local_hhmm=as_of, scenario=r["scenario"],
+                                                             drop_last_quote=drop_last_quote, weather_delay_h=weather_delay_h)
+        res = {"event_id": event_id, "label": label, "scored_replay_fingerprint": r["replay_fingerprint"],
+               "as_of_local": r["as_of_local"], "scenario": r["scenario"]}
         if label and E.label_ok(label):
             pa = E.predict_all(self.cfg, self.state, row)
             wi = E.winner_index(row, label)
@@ -107,8 +109,8 @@ class ReplayService:
         # post-cutoff market path (future data) belongs only here
         return res
 
-    def threshold(self, event_id, lo=None, hi=None, as_of="08:00"):
-        r = self.replay(event_id, as_of)
+    def threshold(self, event_id, lo=None, hi=None, as_of="08:00", drop_last_quote=False, weather_delay_h=0.0):
+        r = self.replay(event_id, as_of, drop_last_quote, weather_delay_h)
         pred = r["prediction"]
         if "support_masses" not in pred:
             return {"available": False, "reason": pred.get("reason")}

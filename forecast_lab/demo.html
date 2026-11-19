@@ -34,7 +34,7 @@ P(high ≥ <input id="tlo" size="3"> °F and ≤ <input id="thi" size="3"> °F) 
 <fieldset><legend>Provenance</legend><div id="prov"></div><details><summary>raw replay response</summary><pre id="raw"></pre></details></fieldset>
 </div>
 <script>
-const $=id=>document.getElementById(id);let cur=null,evs=[],golden=null;
+const $=id=>document.getElementById(id);let cur=null,curq=null,evs=[],golden=null;
 const pct=x=>x==null?'—':(100*x).toFixed(1)+'%';const f2=x=>x==null?'—':(+x).toFixed(2);
 const rng=b=>b.lo==null?`≤ ${b.hi}`:b.hi==null?`≥ ${b.lo}`:`${b.lo}–${b.hi}`;
 async function j(u){const r=await fetch(u);const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);return d}
@@ -49,7 +49,7 @@ $('ev').onchange=()=>{$('date').value=evs.find(e=>e.event_id==$('ev').value).eve
 $('go').onclick=run;$('gold').onclick=()=>{$('ev').value=golden;$('asof').value='08:00';$('dropq').checked=false;$('wdel').value=0;run()};
 async function run(){$('err').textContent='';$('revout').innerHTML='';
  const q=new URLSearchParams({event:$('ev').value,as_of:$('asof').value,drop_last_quote:$('dropq').checked?1:0,weather_delay_h:$('wdel').value||0});
- try{cur=await j('/api/replay?'+q)}catch(e){$('err').textContent=e.message;return}render(cur)}
+ try{cur=await j('/api/replay?'+q);curq=q}catch(e){$('err').textContent=e.message;return}render(cur)}
 function render(r){$('out').hidden=false;const p=r.prediction,s=r.sources;
  const flags=[];if(r.exploratory_horizon)flags.push('<span class="warn">EXPLORATORY horizon (not the frozen 08:00 benchmark)</span>');
  if(r.what_if)flags.push(`<span class="warn">WHAT-IF scenario: ${r.scenario}</span>`);
@@ -68,9 +68,9 @@ function render(r){$('out').hidden=false;const p=r.prediction,s=r.sources;
  ${cd?`Coherent: converged ${cd.converged}, λ=${cd.lambda}, Σbid=${cd.sum_bid.toFixed(2)}, Σask=${cd.sum_ask.toFixed(2)}, max |residual| ${cd.max_abs_residual.toFixed(4)}${cd.fallback?' fallback '+cd.fallback:''}<br>Quote residuals: ${cd.residuals.map(x=>x.toFixed(3)).join(', ')}`:'Coherent: unavailable'}<br>
  Fetch failures: ${pv.fetch_failures.length?JSON.stringify(pv.fetch_failures):'none'} · candle payload hashes: ${Object.values(pv.candles).map(c=>c.sha256.slice(0,10)).join(', ')}`;
  $('raw').textContent=JSON.stringify(r,null,1)}
-$('tq').onclick=async()=>{const q=new URLSearchParams({event:cur.event_id,lo:$('tlo').value,hi:$('thi').value,as_of:cur.as_of_local});
+$('tq').onclick=async()=>{const q=new URLSearchParams(curq);q.set('lo',$('tlo').value);q.set('hi',$('thi').value);
  try{const d=await j('/api/threshold?'+q);$('tres').textContent=d.available?`= ${pct(d.probability)} (${d.model_id})`:'unavailable: '+d.reason}catch(e){$('tres').textContent=e.message}};
-$('rev').onclick=async()=>{const d=await j('/api/reveal?event='+encodeURIComponent(cur.event_id));const l=d.label;
+$('rev').onclick=async()=>{const d=await j('/api/reveal?'+curq);const l=d.label;
  if(!l){$('revout').textContent='No label';return}
  document.querySelectorAll('#tbl tr').forEach(t=>t.classList.toggle('win',t.dataset.b==l.winner_bucket));
  let h=`Settled: winner <b>${l.winner_bucket}</b> (<code>${l.winner_ticker}</code>) · CLI high ${l.settled_value_f??'—'}°F · settled ${l.settlement_ts} ${l.reasons.length?'<span class="warn">'+l.reasons.join(', ')+'</span>':''}`;

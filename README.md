@@ -6,6 +6,21 @@ Series: `KXHIGHNY` (NYC Central Park daily high, NWS CLI settlement regime). The
 
 Spec and timing assumptions: [docs/experiment.md](docs/experiment.md). Results: [evidence/nyc-0800-v1/REPORT.md](evidence/nyc-0800-v1/REPORT.md).
 
+## Versioned experiment `nyc-0800-v2`
+
+V2 is a separate experiment, opened after v1 test scoring. It was chosen from v1's documented limitations, not from v1 test-set losses. Its frozen configuration is `configs/nyc-0800-v2.toml`; it adds an America/New_York full-day sampled MOS maximum, cached morning ASOS observations with a 10-minute latency guard, an expanded weather model, and explicit exclusion of empty latest quote books. The v1 configuration, evidence, fixture and work directory remain unchanged. Details and assumptions are in [docs/experiment.md](docs/experiment.md).
+
+Build, fit, and inspect only the development and audit windows while the test block is closed:
+
+```sh
+$PY -m forecast_lab --config configs/nyc-0800-v2.toml build
+$PY -m forecast_lab fit --config configs/nyc-0800-v2.toml
+$PY -m forecast_lab evaluate --config configs/nyc-0800-v2.toml --split audit
+$PY -m forecast_lab golden --config configs/nyc-0800-v2.toml --model nyc-0800-v2.adaptive_blend@2025-10-01
+```
+
+The v2 `weather_delay_h` what-if delays only the MOS run; ASOS observations retain their configured cutoff-latency window. V2 has not been scored on the test split.
+
 ## Reproduce
 
 ```sh

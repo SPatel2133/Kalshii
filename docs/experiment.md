@@ -46,3 +46,18 @@ If only one source is usable, the blends use it alone with an explicit reason (`
 * The coherent model's reference `c` is the normalized midpoint. With climatology as `c`, wide early-market bands let the prior dominate (OOF log loss 1.71 vs 1.48 for raw).
 * 2021–22 single-threshold markets and events whose board is not a full partition are excluded with `invalid_bucket_partition` / `missing_rule_evidence`.
 * Feb 2025 events have null strike fields. Their intervals come from the rule text alone, and the evidence is flagged.
+
+## Versioned experiment `nyc-0800-v2`
+
+V2 was opened after v1 test scoring. Its feature choices were based on v1's documented limitations, not on v1 test-set losses. It uses the same event splits, 08:00 local cutoff, NWS regime, 7.5-hour primary MOS availability lag, 11-hour strict sensitivity lag, scoring policy, thresholds, bootstrap settings, and seed. V1's config, work products, evidence, model IDs and golden fixture remain frozen.
+
+The changes are opt-in through `configs/nyc-0800-v2.toml` and are stored under `data/work-v2/` and `evidence/nyc-0800-v2/`:
+
+* **Empty latest book:** v2 excludes a bucket when its latest quoted candle at or before cutoff has finite bid ≤ 0 and ask ≥ 1. It does not carry forward an older quote behind that empty book. V1's default remains `skip`, preserving its carried-forward quote behavior.
+* **Full local-day sampled MOS maximum:** the selected, strictly as-of run supplies 3-hourly `tmp` values from local midnight on event date through (but excluding) local midnight the following day. Bounds are converted through `America/New_York`, so the UTC window follows EST/EDT. At least seven samples are required. The existing `n_x` and its daytime-window meaning are unchanged; the sampled-minus-`n_x` difference supplements it.
+* **Morning observations:** cached IEM ASOS `NYC` hourly temperatures from local midnight through `cutoff - 10 minutes` supply the maximum-so-far and latest observed temperature. The 10-minute latency guard is an assumption to avoid using an observation that may not yet have been available at the cutoff; it is not a verified archive publication timestamp. If no observations qualify, the event remains eligible, missing observation features are zero, and the row is flagged.
+* **Weather model:** the mean model gains sampled-minus-`n_x`, observed-maximum-minus-`n_x`, and latest-observation-minus-`n_x` coefficients; seasonal sigma is unchanged. With no configured extra features, the weather-model fit retains the v1 parameterization.
+
+The MOS availability assumption is unchanged: historical publication times cannot be proven because the IEM AFOS archive has no MAV bulletins. The primary `runtime + 7.5 h` lag and strict `runtime + 11 h` sensitivity are retained; v2 does not claim that either reproduces actual historical publication times. In what-if replays, `weather_delay_h` delays MOS selection only. It does not delay or exclude observations beyond the fixed observation-latency window.
+
+Known limitations and out-of-scope items: Weather Company regime days from 2026-08-14 onward are too few and outside the test window; historical MOS publication timestamps are not archived; observations use hourly ASOS data and a chosen latency guard; no UI redesign is included. The demo can load a v2 model with the v2 config and model ID. V2 test scoring remains closed until the frozen experiment is explicitly opened.

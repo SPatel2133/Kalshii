@@ -87,6 +87,9 @@ class ReplayService:
                            "coherent_diagnostics": coh.get("diagnostics"), "quote_weights": coh.get("quote_weights"),
                            "gate": pa["adaptive_blend"].get("gate"), "gate_inputs": pa["adaptive_blend"].get("gate_inputs")},
         }
+        extra = set(out) - PRE_REVEAL_ALLOWED
+        if extra:
+            raise AssertionError(f"non-allowlisted keys in pre-reveal response: {sorted(extra)}")
         assert_outcome_free(out)
         return out
 
@@ -117,7 +120,6 @@ class ReplayService:
 
 def assert_outcome_free(obj):
     if isinstance(obj, dict):
-        assert set(obj) <= PRE_REVEAL_ALLOWED or "event_id" not in obj or True
         for k, v in obj.items():
             if k in FORBIDDEN_KEYS:
                 raise AssertionError(f"outcome-bearing key in pre-reveal response: {k}")

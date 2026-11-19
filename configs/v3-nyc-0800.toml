@@ -47,8 +47,8 @@ hi_f = 120
 
 [split]
 dev_start = "2022-12-01"
-test_start = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
-test_end = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
+test_start = "2025-10-01"
+test_end = "2026-07-14"
 audit_start = "2026-07-15"
 audit_end = "2026-08-13"
 min_train_events = 60
@@ -56,7 +56,7 @@ refit_every_days = 0
 
 [download]
 start = "2022-12-01"
-end = "2026-08-31"
+end = "2026-08-13"
 
 [models]
 prob_floor = 1e-4

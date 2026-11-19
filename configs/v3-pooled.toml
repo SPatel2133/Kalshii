@@ -1,16 +1,17 @@
-# NYC is excluded from the six-city confirmatory pool.
+# Five-city confirmatory pool; NYC is exploratory and Denver is dropped.
 city_configs = [
   "configs/v3-chi-0800.toml",
   "configs/v3-mia-0800.toml",
   "configs/v3-aus-0800.toml",
   "configs/v3-lax-0800.toml",
-  "configs/v3-den-0800.toml",
   "configs/v3-phil-0800.toml",
 ]
 
+output_dir = "evidence/v3/pooled"
+
 [split]
-test_start = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
-test_end = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
+test_start = "2025-06-24"
+test_end = "2026-08-13"
 
 [pool]
 block_days = 7

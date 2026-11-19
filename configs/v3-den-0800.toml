@@ -1,4 +1,4 @@
-# V3 city profile; split dates remain provisional until pre-registration.
+# DROPPED in pre-registration: ambiguous 'Denver, CO' station wording; not used
 experiment_id = "v3-den-0800"
 feature_version = "feat-v3"
 series = "KXHIGHDEN"

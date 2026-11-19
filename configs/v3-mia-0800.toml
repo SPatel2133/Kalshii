@@ -1,4 +1,4 @@
-# V3 city profile; split dates remain provisional until pre-registration.
+# V3 city profile; split dates are preregistered.
 experiment_id = "v3-mia-0800"
 feature_version = "feat-v3"
 series = "KXHIGHMIA"
@@ -46,15 +46,15 @@ lo_f = 0
 hi_f = 120
 
 [split]
-dev_start = "2021-01-01"
-test_start = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
-test_end = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
+dev_start = "2025-04-26"
+test_start = "2026-02-28"
+test_end = "2026-08-13"
 min_train_events = 60
 refit_every_days = 0
 
 [download]
-start = "2021-01-01"
-end = "2026-08-31"
+start = "2025-04-26"
+end = "2026-08-13"
 
 [models]
 prob_floor = 1e-4

@@ -155,14 +155,20 @@ def cmd_golden(args):
     ev = cfg["split"]["golden_event"]
     r = svc.replay(ev)
     rev = svc.reveal(ev)
+    selected = r["weather"]["selected"]
+    weather_keys = ["runtime_utc", "available_utc", "mos_daytime_max_f"]
+    weather_keys.extend(k for k in ("sampled_max_local_f", "n_samples_local", "sample_window_local_utc")
+                         if selected and k in selected)
     fx = {"event_id": ev, "model_id": r["model_id"], "state_sha256": st["state_sha256"], "cutoff_utc": r["cutoff_utc"],
           "replay_fingerprint": r["replay_fingerprint"], "prediction_fingerprint": r["prediction"]["prediction_fingerprint"],
           "buckets": [{k: b[k] for k in ("bucket_id", "ticker", "lo", "hi", "bid", "ask", "quote_obs_utc")} for b in r["buckets"]],
-          "weather": {k: r["weather"]["selected"][k] for k in ("runtime_utc", "available_utc", "mos_daytime_max_f")},
+          "weather": {**{k: selected[k] for k in weather_keys},
+                      **({"obs": r["weather"]["obs"]} if "obs" in r["weather"] else {})},
           "probabilities": r["prediction"]["probabilities"],
           "candle_sha256": {t: c["sha256"] for t, c in r["provenance"]["candles"].items()},
           "label": {k: rev["label"][k] for k in ("winner_bucket", "winner_ticker", "settled_value_f", "settlement_ts")}}
-    write_json(Path("tests/fixtures/golden_KXHIGHNY-26AUG13.json"), fx)
+    fixture = cfg["paths"].get("golden_fixture", "tests/fixtures/golden_KXHIGHNY-26AUG13.json")
+    write_json(Path(fixture), fx)
     print(json.dumps(fx, indent=1))
 
 
@@ -172,9 +178,10 @@ def cmd_report(args):
     t = json.loads((ev / "eval-test" / "summary.json").read_text())
     a = json.loads((ev / "eval-audit" / "summary.json").read_text())
     man = json.loads((ev / "model_manifest.json").read_text())
-    fx = json.loads(Path("tests/fixtures/golden_KXHIGHNY-26AUG13.json").read_text())
+    fixture = cfg["paths"].get("golden_fixture", "tests/fixtures/golden_KXHIGHNY-26AUG13.json")
+    fx = json.loads(Path(fixture).read_text())
     rows = read_jsonl(ev / "eval-test" / "evaluation_rows.jsonl")
-    L = ["# Evidence report `nyc-0800-v1`", "",
+    L = [f"# Evidence report `{cfg['experiment_id']}`", "",
          f"Config sha256 `{t['config_sha256']}` · model state `{t['state_sha256']}` · fit boundary {man['fit_boundary']} · "
          f"{man['n_dev_events']} development events.", "",
          f"Predictions were sealed before scoring: `predictions.jsonl` sha256 `{t['predictions_sha256_sealed_before_scoring']}`.", "",
@@ -198,11 +205,12 @@ def cmd_report(args):
         L += ["", f"Strict weather lag ({sl['lag_h']} h): weather selection changed on {sl['weather_selection_changed']} events; "
               f"adaptive − fixed {cs['mean_delta']:+.5f} [{cs['ci95_block'][0]:+.5f}, {cs['ci95_block'][1]:+.5f}], {cs['decision']}."]
     L += ["", f"Fitted parameters: fixed-blend market weight w = {man['fixed_blend']['w']:.3f}; coherent λ = {man['upstream']['lambda']}; "
-          f"correction promoted on validation = {man['correction']['validation']['promoted']}.", "",
-          "Likely interpretation (an inference, not tested here): by 08:00 the market already prices in the public MOS forecast. The OOF fit put all of the fixed blend's weight "
-          "on the coherent market model, and the regularized gate stays close to that constant, so neither blend can beat the market by the "
-          "declared effect size. This is a valid null result. The weather model alone is clearly worse than the market (see table).", "",
-          "## Coverage", "", "| Stage | Test | Audit (30 days to 2026-08-13) |", "|---|---|---|"]
+          f"correction promoted on validation = {man['correction']['validation']['promoted']}.", ""]
+    if cfg["experiment_id"] == "nyc-0800-v1":
+        L.append("Likely interpretation (an inference, not tested here): by 08:00 the market already prices in the public MOS forecast. The OOF fit put all of the fixed blend's weight "
+                 "on the coherent market model, and the regularized gate stays close to that constant, so neither blend can beat the market by the "
+                 "declared effect size. This is a valid null result. The weather model alone is clearly worse than the market (see table).")
+    L += ["", "## Coverage", "", "| Stage | Test | Audit (30 days to 2026-08-13) |", "|---|---|---|"]
     for k in ("candidate_dates", "catalogue", "rules_valid", "quote_complete", "weather_available", "label_valid"):
         L.append(f"| {k} | {t['funnel'][k]} | {a['funnel'][k]} |")
     L += ["", f"Exclusion reasons (test): {t['funnel']['reasons'] or 'none'}; audit: {a['funnel']['reasons'] or 'none'}. "

@@ -1,0 +1,327 @@
+{
+  "city_alpha": {
+    "aus-1100": 1.0784335446516717,
+    "chi-1100": 1.3014301178308767,
+    "lax-1100": 1.1130319373692297,
+    "mia-1100": 1.209627168924809,
+    "phil-1100": 1.2363031202295947
+  },
+  "city_margins": {
+    "aus-1100": {
+      "adaptive_blend": 0.02,
+      "fixed_blend": 0.02,
+      "market_raw": 0.05,
+      "market_recal": 0.05,
+      "weather": 0.1
+    },
+    "chi-1100": {
+      "adaptive_blend": 0.0,
+      "fixed_blend": 0.0,
+      "market_raw": 0.05,
+      "market_recal": 0.05,
+      "weather": 0.1
+    },
+    "lax-1100": {
+      "adaptive_blend": 0.0,
+      "fixed_blend": 0.0,
+      "market_raw": 0.0,
+      "market_recal": 0.1,
+      "weather": 0.1
+    },
+    "mia-1100": {
+      "adaptive_blend": 0.0,
+      "fixed_blend": 0.0,
+      "market_raw": 0.05,
+      "market_recal": 0.1,
+      "weather": 0.1
+    },
+    "phil-1100": {
+      "adaptive_blend": 0.02,
+      "fixed_blend": 0.1,
+      "market_raw": 0.02,
+      "market_recal": 0.1,
+      "weather": 0.1
+    }
+  },
+  "dev_oof_common_events": 1668,
+  "dev_oof_pnl": {
+    "0.0": -23.41000000000007,
+    "0.02": -9.210000000000004,
+    "0.05": -4.950000000000001,
+    "0.1": -9.739999999999998
+  },
+  "experiment_id": "v3-pooled",
+  "final_train_ids_sha256": {
+    "aus-1100": "c5e7085734c39203260eeae3b093713b68052d8a8ad68bffeff78192dae7cbbf",
+    "chi-1100": "356d0bcf35f7b4eea45e5aac0edc60d1a41ae9df3b9f7c8f38cdac973a3994f1",
+    "lax-1100": "3d17b2438a4cbb1925bbf18600e1dbf9e3b3eee9c26851c6ecab8141c16e0f5d",
+    "mia-1100": "58ff2d91ea1444879fe670ebcb332216c4d2b8984c0bbc0cfeb15cab71abee61",
+    "phil-1100": "2bd53eba54d70564062119828f870a8f2e3ff352e4179e99fa2cca2a034efda1"
+  },
+  "fold_alpha": {
+    "aus-1100": {
+      "1": {
+        "alpha": 0.9130247129001752,
+        "cutoff_utc": "2023-10-13T16:00:00+00:00",
+        "first_date": "2023-10-13",
+        "fit": {
+          "alpha": 0.9130247129001752,
+          "converged": true,
+          "n": 590,
+          "nll": 808.6676383199422
+        }
+      },
+      "2": {
+        "alpha": 1.0920009573250569,
+        "cutoff_utc": "2024-03-19T16:00:00+00:00",
+        "first_date": "2024-03-19",
+        "fit": {
+          "alpha": 1.0920009573250569,
+          "converged": true,
+          "n": 1290,
+          "nll": 1711.3784987582073
+        }
+      },
+      "3": {
+        "alpha": 1.125010034989771,
+        "cutoff_utc": "2024-08-20T16:00:00+00:00",
+        "first_date": "2024-08-20",
+        "fit": {
+          "alpha": 1.125010034989771,
+          "converged": true,
+          "n": 2050,
+          "nll": 2721.3508250348787
+        }
+      },
+      "4": {
+        "alpha": 1.0822172297457155,
+        "cutoff_utc": "2025-01-21T17:00:00+00:00",
+        "first_date": "2025-01-21",
+        "fit": {
+          "alpha": 1.0822172297457155,
+          "converged": true,
+          "n": 2890,
+          "nll": 3698.097369785246
+        }
+      }
+    },
+    "chi-1100": {
+      "1": {
+        "alpha": 1.0910283919748096,
+        "cutoff_utc": "2025-05-12T16:00:00+00:00",
+        "first_date": "2025-05-12",
+        "fit": {
+          "alpha": 1.0910283919748096,
+          "converged": true,
+          "n": 4500,
+          "nll": 5380.074579516196
+        }
+      },
+      "2": {
+        "alpha": 1.1347979961116559,
+        "cutoff_utc": "2025-07-20T16:00:00+00:00",
+        "first_date": "2025-07-20",
+        "fit": {
+          "alpha": 1.1347979961116559,
+          "converged": true,
+          "n": 6085,
+          "nll": 6994.48193544502
+        }
+      },
+      "3": {
+        "alpha": 1.1264307800876094,
+        "cutoff_utc": "2025-09-26T16:00:00+00:00",
+        "first_date": "2025-09-26",
+        "fit": {
+          "alpha": 1.1264307800876094,
+          "converged": true,
+          "n": 7455,
+          "nll": 8439.139002561275
+        }
+      },
+      "4": {
+        "alpha": 1.1488250186150897,
+        "cutoff_utc": "2025-12-04T17:00:00+00:00",
+        "first_date": "2025-12-04",
+        "fit": {
+          "alpha": 1.1488250186150897,
+          "converged": true,
+          "n": 8835,
+          "nll": 9613.524047671355
+        }
+      }
+    },
+    "lax-1100": {
+      "1": {
+        "alpha": 1.0992087054309232,
+        "cutoff_utc": "2025-03-22T18:00:00+00:00",
+        "first_date": "2025-03-22",
+        "fit": {
+          "alpha": 1.0992087054309232,
+          "converged": true,
+          "n": 3575,
+          "nll": 4359.600368626568
+        }
+      },
+      "2": {
+        "alpha": 1.0917635525720395,
+        "cutoff_utc": "2025-06-06T18:00:00+00:00",
+        "first_date": "2025-06-06",
+        "fit": {
+          "alpha": 1.0917635525720395,
+          "converged": true,
+          "n": 5125,
+          "nll": 6072.734579762397
+        }
+      },
+      "3": {
+        "alpha": 1.1339551861746384,
+        "cutoff_utc": "2025-08-21T18:00:00+00:00",
+        "first_date": "2025-08-21",
+        "fit": {
+          "alpha": 1.1339551861746384,
+          "converged": true,
+          "n": 6735,
+          "nll": 7628.708366822943
+        }
+      },
+      "4": {
+        "alpha": 1.136369051755297,
+        "cutoff_utc": "2025-11-05T19:00:00+00:00",
+        "first_date": "2025-11-05",
+        "fit": {
+          "alpha": 1.136369051755297,
+          "converged": true,
+          "n": 8255,
+          "nll": 9192.45257491523
+        }
+      }
+    },
+    "mia-1100": {
+      "1": {
+        "alpha": 1.1360491114996978,
+        "cutoff_utc": "2025-06-27T15:00:00+00:00",
+        "first_date": "2025-06-27",
+        "fit": {
+          "alpha": 1.1360491114996978,
+          "converged": true,
+          "n": 5635,
+          "nll": 6500.907462776296
+        }
+      },
+      "2": {
+        "alpha": 1.1342930732547096,
+        "cutoff_utc": "2025-08-27T15:00:00+00:00",
+        "first_date": "2025-08-27",
+        "fit": {
+          "alpha": 1.1342930732547096,
+          "converged": true,
+          "n": 6850,
+          "nll": 7752.273382293122
+        }
+      },
+      "3": {
+        "alpha": 1.1414223113277302,
+        "cutoff_utc": "2025-10-28T15:00:00+00:00",
+        "first_date": "2025-10-28",
+        "fit": {
+          "alpha": 1.1414223113277302,
+          "converged": true,
+          "n": 8085,
+          "nll": 9000.699420726118
+        }
+      },
+      "4": {
+        "alpha": 1.1501204406221166,
+        "cutoff_utc": "2025-12-28T16:00:00+00:00",
+        "first_date": "2025-12-28",
+        "fit": {
+          "alpha": 1.1501204406221166,
+          "converged": true,
+          "n": 9315,
+          "nll": 10014.378352317783
+        }
+      }
+    },
+    "phil-1100": {
+      "1": {
+        "alpha": 1.1360491114996978,
+        "cutoff_utc": "2025-06-27T15:00:00+00:00",
+        "first_date": "2025-06-27",
+        "fit": {
+          "alpha": 1.1360491114996978,
+          "converged": true,
+          "n": 5635,
+          "nll": 6500.907462776296
+        }
+      },
+      "2": {
+        "alpha": 1.1342930732547096,
+        "cutoff_utc": "2025-08-27T15:00:00+00:00",
+        "first_date": "2025-08-27",
+        "fit": {
+          "alpha": 1.1342930732547096,
+          "converged": true,
+          "n": 6850,
+          "nll": 7752.273382293122
+        }
+      },
+      "3": {
+        "alpha": 1.1414223113277302,
+        "cutoff_utc": "2025-10-28T15:00:00+00:00",
+        "first_date": "2025-10-28",
+        "fit": {
+          "alpha": 1.1414223113277302,
+          "converged": true,
+          "n": 8085,
+          "nll": 9000.699420726118
+        }
+      },
+      "4": {
+        "alpha": 1.1501204406221166,
+        "cutoff_utc": "2025-12-28T16:00:00+00:00",
+        "first_date": "2025-12-28",
+        "fit": {
+          "alpha": 1.1501204406221166,
+          "converged": true,
+          "n": 9315,
+          "nll": 10014.378352317783
+        }
+      }
+    }
+  },
+  "input_config_sha256": {
+    "aus-1100": "7389c177724b6d0fcffc2313ec2735a3287372e9d23218744792edc62df88757",
+    "chi-1100": "4e8e09f857931529f4163ae24c0cefbad9edf568c0d76d492961f744d58cc23a",
+    "lax-1100": "1a4d29d74b96ed57149a04e4d55bad1274008b88100b10ec57055afc84aadb5e",
+    "mia-1100": "6a314cd2722cdb659a069c73c31af77a8ce6d51a8113f1bd97aeac1d5d3a39bc",
+    "phil-1100": "485ba13b981784e90ee485551ce7b90e9299778f6caa365b590b4f30b2e21cb0"
+  },
+  "input_oof_sha256": {
+    "aus-1100": "74370e70034d96f95e112adae0f8673a068b2de623d77745000445de1495a981",
+    "chi-1100": "8d901ab0cf889a1e362c978318ef775431b801478ff1615cddc5df7ddf5a7b12",
+    "lax-1100": "6e189134072508f6298e4600bd3d8ab44a12d3013cc83568b095a64c4033b4b0",
+    "mia-1100": "14b519e84daafedd25face47c1b84679d65f25d0a0196c4cb7287fb3c2b989ba",
+    "phil-1100": "40930d90ba70adcfae435e66e504ac1806004df08f0f1c8c99d366e5c5d387ef"
+  },
+  "input_state_sha256": {
+    "aus-1100": "8d0f8c21878a07f4a11edcdecfa2241b283ab76d1fb1b5bd500f22306683a82d",
+    "chi-1100": "cb6af80d0976bf5c3e9ac066f74b5fedc4d97cec78be18b1f0fab56c0fcaa702",
+    "lax-1100": "f63b3a383608e3eee773bcd01d398de578c0eb25c4e1e42fb243641247b82461",
+    "mia-1100": "3fe2d58166a145bcca9a348b16bd2f1f851e46dec5c3aa71bfbc927e645a2b30",
+    "phil-1100": "147aaa7ee1e57bba549b25d98c8ee00acbd947ec696eb3df3f9af3a19d28b68c"
+  },
+  "pooled_alpha": 1.1605827248784353,
+  "pooled_alpha_fit": {
+    "alpha": 1.1605827248784353,
+    "converged": true,
+    "n": 2054,
+    "nll": 2168.82087973093
+  },
+  "pooled_margin": 0.05,
+  "pooled_test_span": [
+    "2025-06-24",
+    "2026-08-13"
+  ],
+  "pre_registration_sha": "074fcdea36fc0597b3384b7774d1e8203dad00ae"
+}

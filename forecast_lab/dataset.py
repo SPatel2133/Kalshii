@@ -130,6 +130,7 @@ def build_all(cfg, start, end, out_dir, lag_h=None, log=print):
                              "weather_runtime": (row["weather"]["selected"] or {}).get("runtime_utc"),
                              "settlement_ts": (label or {}).get("settlement_ts")})
         d += timedelta(days=1)
+    atomic_write(out / "config_sha256.txt", cfg["_sha256"] + "\n")
     write_jsonl(out / "rules.jsonl", rules_rows)
     write_jsonl(out / "labels.jsonl", label_rows)
     write_jsonl(out / "features.jsonl", feat_rows)

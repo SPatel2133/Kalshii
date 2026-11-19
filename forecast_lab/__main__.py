@@ -86,7 +86,8 @@ def cmd_build(args):
 
 def _ensure_dataset(cfg):
     d = Path(cfg["paths"]["work_dir"]) / "dataset"
-    if not (d / "features.jsonl").exists():
+    stamp = d / "config_sha256.txt"
+    if not (d / "features.jsonl").exists() or not stamp.exists() or stamp.read_text().strip() != cfg["_sha256"]:
         sp = cfg["split"]
         dataset.build_all(cfg, date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"]), d)
     return E.load_dataset(d)

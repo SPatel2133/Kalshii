@@ -31,11 +31,12 @@ class Sources:
             return None, None, e.failure_class
 
     def mos_runs(self, d):
-        key = (d.year, d.month)
+        months = tuple(sorted({date(x.year, x.month, 1) for x in (d - timedelta(days=1), d)}))
+        key = months
         if key not in self._runs:
             rows = []
             metas = []
-            for dd in sorted({date(x.year, x.month, 1) for x in (d - timedelta(days=1), d)}):
+            for dd in months:
                 try:
                     r, m = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
                     rows += r

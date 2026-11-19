@@ -172,9 +172,12 @@ def _metrics(event_rows, traded_rows, dropped, block_days, sensitivity, reps, se
     }
 
 
-def run_backtest(cfg, predictions, features, labels, start, end, margins, split):
+def run_backtest(cfg, predictions, features, labels, start, end, margins, split, include_event_pnl=False):
     bt = {**DEFAULT_BACKTEST, **cfg.get("backtest", {})}
     cohort, by_event = _common_events(predictions, features, start, end)
+    cohort = [event_id for event_id in cohort
+              if labels.get(event_id) and labels[event_id].get("winner_bucket") is not None
+              and not labels[event_id].get("reasons")]
     if not cohort:
         raise ValueError("backtest requires a nonempty five-family common cohort")
     strategies = list(STRATEGIES)
@@ -237,11 +240,14 @@ def run_backtest(cfg, predictions, features, labels, start, end, margins, split)
                     }
                     scenario_trades.append({**record, "contracts": trade["contracts"], "won": trade["won"]})
             all_trades.extend(scenario_trades)
-            metrics[strategy][scenario] = _metrics(
+            scenario_metrics = _metrics(
                 event_rows, scenario_trades, dropped, bt.get("block_days", 7),
                 bt.get("block_sensitivity", [3, 14]), bt.get("bootstrap_reps", 2000),
                 bt.get("seed", 20260813), start, end)
-            metrics[strategy][scenario]["decision_flags"] = decision_flags
+            scenario_metrics["decision_flags"] = decision_flags
+            if include_event_pnl:
+                scenario_metrics["event_pnl"] = event_rows
+            metrics[strategy][scenario] = scenario_metrics
     decision_by_strategy = {}
     for strategy, scenarios_for_strategy in metrics.items():
         base_metrics = scenarios_for_strategy.get("fee_1x", {})

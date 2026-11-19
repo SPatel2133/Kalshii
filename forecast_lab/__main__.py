@@ -7,7 +7,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import backtest as B, config as C, contracts, dataset, download, evaluation as E, v3, weather
+from . import backtest as B, config as C, contracts, dataset, download, evaluation as E, pooled as P, v3, weather
 from .service import ReplayService, load_state, models_dir
 from .util import atomic_write, read_jsonl, sha256_bytes, write_json, write_jsonl
 
@@ -348,6 +348,71 @@ def cmd_backtest(args):
     print(json.dumps({"output": str(output), "summary": summary}, indent=1))
 
 
+def cmd_pooled(args):
+    cfg = C.load(args.pooled)
+    if args.stage == "dev":
+        P.pooled_dev_stage(cfg, v3.PREREGISTRATION_SHA)
+    else:
+        P.pooled_test_stage(cfg, v3.PREREGISTRATION_SHA)
+
+
+def cmd_nyc_reanalysis(args):
+    cfg = C.load("configs/nyc-0800-v2.toml")
+    dataset_dir = Path(cfg["paths"]["work_dir"]) / "dataset"
+    feats, labels, _ = E.load_dataset(dataset_dir)
+    state, oof = E.fit(cfg, feats, labels)
+    state_name = f"{cfg['experiment_id']}@{cfg['split']['test_start']}.json"
+    manifest_path = Path(cfg["paths"]["evidence_dir"]) / "model_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    expected_sha = manifest["state_sha256"]
+    references = [
+        models_dir(cfg) / state_name,
+        Path(__file__).resolve().parents[2] / "Kalshii-v2" / cfg["paths"]["work_dir"] / "models" / state_name,
+    ]
+    for reference_path in references:
+        if reference_path.is_file():
+            saved_sha = json.loads(reference_path.read_text())["state_sha256"]
+            if saved_sha != expected_sha:
+                raise ValueError(f"saved v2 model SHA does not match its committed manifest: {reference_path}")
+    if state["state_sha256"] != expected_sha:
+        raise ValueError("scratch v2 refit does not match the committed v2 model SHA")
+
+    settings = {**B.DEFAULT_BACKTEST, **cfg.get("backtest", {})}
+    oof_rows = E.oof_prediction_rows(state, oof)
+    margins = B.select_margin(
+        oof_rows, feats, labels, cfg["split"]["test_start"],
+        settings["margins"], settings["fee_rate"], settings["contracts"])
+    prediction_path = Path(cfg["paths"]["evidence_dir"]) / "eval-test" / "predictions.jsonl"
+    test_summary = json.loads((prediction_path.parent / "summary.json").read_text())
+    prediction_sha = sha256_bytes(prediction_path.read_bytes())
+    if prediction_sha != test_summary["predictions_sha256_sealed_before_scoring"]:
+        raise ValueError("saved v2 test predictions do not match their seal")
+    start, end = date.fromisoformat(cfg["split"]["test_start"]), date.fromisoformat(cfg["split"]["test_end"])
+    backtest_summary, trades = B.run_backtest(
+        cfg, read_jsonl(prediction_path), feats, labels, start, end, margins["selected"], "test")
+    out = Path("evidence/v3/nyc-reanalysis")
+    summary = {
+        "experiment_id": "nyc-0800-v2-reanalysis",
+        "exploratory": True,
+        "pre_registration_sha": v3.PREREGISTRATION_SHA,
+        "window": [start.isoformat(), end.isoformat()],
+        "refit_state_sha256": state["state_sha256"],
+        "saved_v2_state_sha256": expected_sha,
+        "source_test_predictions_sha256": prediction_sha,
+        "selected_margins": margins["selected"],
+        "dev_oof_pnl": margins["dev_oof_pnl"],
+        "backtest": backtest_summary,
+    }
+    write_json(out / "summary.json", summary)
+    write_jsonl(out / "trades.jsonl", trades)
+    print(json.dumps({
+        "output": str(out),
+        "state_sha256": state["state_sha256"],
+        "selected_margins": margins["selected"],
+        "strategies": backtest_summary["strategies"],
+    }, indent=1))
+
+
 def cmd_demo(args):
     from . import demo
     demo.serve(_cfg(args), args.model, args.port, args.host)
@@ -364,6 +429,12 @@ def main(argv=None):
     vs = sub.add_parser("v3-splits")
     vs.add_argument("--pooled", required=True)
     vs.set_defaults(f=cmd_v3_splits)
+    pool = sub.add_parser("pooled")
+    pool.add_argument("--pooled", required=True)
+    pool.add_argument("--stage", choices=["dev", "test"], required=True)
+    pool.set_defaults(f=cmd_pooled)
+    nr = sub.add_parser("nyc-reanalysis")
+    nr.set_defaults(f=cmd_nyc_reanalysis)
     b = sub.add_parser("build"); b.set_defaults(f=cmd_build)
     f = sub.add_parser("fit"); f.add_argument("--config", dest="config", default=argparse.SUPPRESS); f.set_defaults(f=cmd_fit)
     e = sub.add_parser("evaluate"); e.add_argument("--config", dest="config", default=argparse.SUPPRESS); e.add_argument("--split", choices=["test", "audit"], default="test")

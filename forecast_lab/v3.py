@@ -6,6 +6,8 @@ from collections import defaultdict
 from . import contracts
 from .download import load_catalogue
 
+PREREGISTRATION_SHA = "074fcdea36fc0597b3384b7774d1e8203dad00ae"
+
 STATION_WORDING = re.compile(
     r"\brecorded (?:in|at) (.+?) for [A-Z][a-z]+\s+\d{1,2},\s+\d{4}\b", re.IGNORECASE
 )

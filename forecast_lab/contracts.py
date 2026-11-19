@@ -102,7 +102,7 @@ def contains(lo, hi, t):
     return (lo is None or t >= lo) and (hi is None or t <= hi)
 
 
-def normalize_event(event_ticker, markets, cutoff_utc):
+def normalize_event(event_ticker, markets, cutoff_utc, station_phrase=None):
     """Build the event rules record (no outcome fields) plus a separate label record.
 
     cutoff_utc: datetime. Eligibility universe = contracts created and open at the cutoff."""
@@ -120,8 +120,11 @@ def normalize_event(event_ticker, markets, cutoff_utc):
     elif rec["regime"] != "NWS":
         rec["reasons"].append(R.OTHER_REGIME)
     text0 = markets[0].get("rules_primary") or ""
-    rec["station"] = "Central Park, New York (CLINYC)" if "Central Park" in text0 else (
-        "New York City (CLINYC)" if "CLINYC" in text0 else None)
+    if station_phrase is None:
+        rec["station"] = "Central Park, New York (CLINYC)" if "Central Park" in text0 else (
+            "New York City (CLINYC)" if "CLINYC" in text0 else None)
+    else:
+        rec["station"] = station_phrase
     md = RE_DATE.search(text0)
     rec["rule_date_text"] = md.group(0) if md else None
     if md and ed:
@@ -140,6 +143,9 @@ def normalize_event(event_ticker, markets, cutoff_utc):
             eligible.append(m)
         else:
             ineligible.append(m["ticker"])
+    if station_phrase and rec["regime"] == "NWS" and any(
+            station_phrase.casefold() not in (m.get("rules_primary") or "").casefold() for m in eligible):
+        rec["reasons"].append(R.OTHER_REGIME)
     rec["not_listed_at_cutoff"] = sorted(ineligible)
     try:
         parsed = []

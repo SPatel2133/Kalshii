@@ -29,6 +29,13 @@ PYTHONPATH=. .venv/bin/python -m forecast_lab --config configs/v3-den-0800.toml 
 PYTHONPATH=. .venv/bin/python -m forecast_lab --config configs/v3-phil-0800.toml catalogue
 ```
 
+Once the six new catalogues are cached, derive provisional splits from catalogue rules only (no labels or prices):
+
+```sh
+cd /home/ubuntu/repos/Kalshii-v3
+PYTHONPATH=. .venv/bin/python -m forecast_lab v3-splits --pooled configs/v3-pooled.toml
+```
+
 Resume any city's candles, MOS, and ASOS downloads with the matching command, appending to its progress log:
 
 ```sh

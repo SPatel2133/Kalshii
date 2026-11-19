@@ -7,7 +7,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import config as C, contracts, dataset, download, evaluation as E, weather
+from . import backtest as B, config as C, contracts, dataset, download, evaluation as E, v3, weather
 from .service import ReplayService, load_state, models_dir
 from .util import atomic_write, read_jsonl, sha256_bytes, write_json, write_jsonl
 
@@ -71,8 +71,13 @@ def cmd_download(args):
         end = date.fromisoformat(cfg["download"]["end"])
     else:
         start, end = date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"])
-    print(f"download range {start} through {end}", flush=True)
+    if "download" in cfg:
+        print(f"download range {start} through {end}", flush=True)
     ev, _ = download.load_catalogue(cfg, offline=False)
+    n_markets = sum(len(markets) for event_id, markets in ev.items()
+                    if (event_date := contracts.event_date_from_ticker(event_id)) and start <= event_date <= end)
+    if "download" in cfg:
+        print(f"candles start markets={n_markets}", flush=True)
     st = download.download_candles(cfg, ev, start, end, workers=args.workers)
     print(f"candles ok={st['ok']} failed={len(st['failed'])}")
     src = dataset.Sources(cfg, offline=False)
@@ -107,11 +112,20 @@ def cmd_catalogue(args):
     }, indent=1))
 
 
+def cmd_v3_splits(args):
+    pooled = C.load(args.pooled)
+    profiles = [v3.catalogue_profile(C.load(path), offline=True) for path in pooled["city_configs"]]
+    print(json.dumps({"cities": profiles}, indent=1))
+
+
 def cmd_build(args):
     cfg = _cfg(args)
     sp = cfg["split"]
-    dataset.build_all(cfg, date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"]),
-                      Path(cfg["paths"]["work_dir"]) / "dataset")
+    if "download" in cfg:
+        start, end = date.fromisoformat(cfg["download"]["start"]), date.fromisoformat(cfg["download"]["end"])
+    else:
+        start, end = date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"])
+    dataset.build_all(cfg, start, end, Path(cfg["paths"]["work_dir"]) / "dataset")
     print("built", Path(cfg["paths"]["work_dir"]) / "dataset")
 
 
@@ -119,8 +133,12 @@ def _ensure_dataset(cfg):
     d = Path(cfg["paths"]["work_dir"]) / "dataset"
     stamp = d / "config_sha256.txt"
     if not (d / "features.jsonl").exists() or not stamp.exists() or stamp.read_text().strip() != cfg["_sha256"]:
-        sp = cfg["split"]
-        dataset.build_all(cfg, date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"]), d)
+        if "download" in cfg:
+            start, end = date.fromisoformat(cfg["download"]["start"]), date.fromisoformat(cfg["download"]["end"])
+        else:
+            sp = cfg["split"]
+            start, end = date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"])
+        dataset.build_all(cfg, start, end, d)
     return E.load_dataset(d)
 
 
@@ -129,16 +147,31 @@ def cmd_fit(args):
     feats, labels, cov = _ensure_dataset(cfg)
     state, oof = E.fit(cfg, feats, labels)
     p = models_dir(cfg) / f"{cfg['experiment_id']}@{state['fit_boundary']}.json"
+    oof_path = None
+    backtest_path = None
+    if cfg.get("feature_version") == "feat-v3":
+        oof_rows = E.oof_prediction_rows(state, oof)
+        oof_path = models_dir(cfg) / f"{cfg['experiment_id']}@{state['fit_boundary']}.oof.jsonl"
+        backtest_path = models_dir(cfg) / f"{cfg['experiment_id']}@{state['fit_boundary']}.backtest.json"
+        write_jsonl(oof_path, oof_rows)
+        bt = cfg["backtest"]
+        frozen = B.select_margin(oof_rows, feats, labels, cfg["split"]["test_start"], bt["margins"],
+                                 bt["fee_rate"], bt["contracts"])
+        write_json(backtest_path, frozen)
     write_json(p, state)
     ev = Path(cfg["paths"]["evidence_dir"])
     man = {k: v for k, v in state.items() if k not in ("upstream",)}
     man["upstream"] = {k: v for k, v in state["upstream"].items() if k not in ("clim_values", "clim_doys")}
     man["state_path"] = str(p)
     write_json(ev / "model_manifest.json", man)
-    print(json.dumps({"state": str(p), "state_sha256": state["state_sha256"], "n_dev": state["n_dev_events"],
+    result = {"state": str(p), "state_sha256": state["state_sha256"], "n_dev": state["n_dev_events"],
                       "oof_nll": state["oof_nll"], "fixed_w": state["fixed_blend"]["w"],
                       "lambda": state["upstream"]["lambda"], "correction": state["correction"]["validation"],
-                      "model_ids": [E.model_id(state, f) for f in E.PRIMARY_FAMILIES]}, indent=1))
+                      "model_ids": [E.model_id(state, f) for f in E.PRIMARY_FAMILIES]}
+    if oof_path:
+        result["oof"] = str(oof_path)
+        result["backtest_margins"] = str(backtest_path)
+    print(json.dumps(result, indent=1))
 
 
 def cmd_evaluate(args):
@@ -281,6 +314,40 @@ def cmd_replay(args):
                      indent=1, default=float))
 
 
+def cmd_backtest(args):
+    cfg = _cfg(args)
+    if args.reps is not None:
+        cfg["backtest"] = {**cfg.get("backtest", {}), "bootstrap_reps": args.reps}
+    if cfg["experiment_id"] == "v3-nyc-0800" and args.split == "test" and not args.exploratory:
+        raise ValueError("NYC is exploratory; pass --exploratory to run its test-window backtest")
+    sp = cfg["split"]
+    if args.split == "test":
+        start, end = date.fromisoformat(sp["test_start"]), date.fromisoformat(sp["test_end"])
+    elif "audit_start" in sp and "audit_end" in sp:
+        start, end = date.fromisoformat(sp["audit_start"]), date.fromisoformat(sp["audit_end"])
+    else:
+        raise ValueError(f"{cfg['experiment_id']} has no audit window")
+    pred_path = Path(cfg["paths"]["evidence_dir"]) / f"eval-{args.split}" / "predictions.jsonl"
+    if not pred_path.exists():
+        raise FileNotFoundError(f"sealed split predictions not found: {pred_path}")
+    feats, labels, _ = _ensure_dataset(cfg)
+    if args.margin is not None:
+        margins = {family: args.margin for family in B.STRATEGIES}
+    else:
+        frozen_path = models_dir(cfg) / f"{cfg['experiment_id']}@{sp['test_start']}.backtest.json"
+        if not frozen_path.exists():
+            raise FileNotFoundError(f"dev-frozen backtest margins not found: {frozen_path}")
+        frozen = json.loads(frozen_path.read_text())
+        if frozen.get("test_start") != sp["test_start"]:
+            raise ValueError("frozen margin file does not match the configured test_start")
+        margins = frozen["selected"]
+    summary, trades = B.run_backtest(cfg, read_jsonl(pred_path), feats, labels, start, end, margins, args.split)
+    output = Path(args.output) if args.output else Path(cfg["paths"]["evidence_dir"]) / f"backtest-{args.split}"
+    write_jsonl(output / "trades.jsonl", trades)
+    write_json(output / "summary.json", summary)
+    print(json.dumps({"output": str(output), "summary": summary}, indent=1))
+
+
 def cmd_demo(args):
     from . import demo
     demo.serve(_cfg(args), args.model, args.port, args.host)
@@ -294,10 +361,21 @@ def main(argv=None):
     a.add_argument("--days", type=int, default=30); a.add_argument("--offline", action="store_true"); a.set_defaults(f=cmd_audit)
     dl = sub.add_parser("download"); dl.add_argument("--workers", type=int, default=2); dl.set_defaults(f=cmd_download)
     cat = sub.add_parser("catalogue"); cat.set_defaults(f=cmd_catalogue)
+    vs = sub.add_parser("v3-splits")
+    vs.add_argument("--pooled", required=True)
+    vs.set_defaults(f=cmd_v3_splits)
     b = sub.add_parser("build"); b.set_defaults(f=cmd_build)
     f = sub.add_parser("fit"); f.add_argument("--config", dest="config", default=argparse.SUPPRESS); f.set_defaults(f=cmd_fit)
     e = sub.add_parser("evaluate"); e.add_argument("--config", dest="config", default=argparse.SUPPRESS); e.add_argument("--split", choices=["test", "audit"], default="test")
     e.set_defaults(f=cmd_evaluate)
+    bt = sub.add_parser("backtest")
+    bt.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    bt.add_argument("--split", choices=["test", "audit"], required=True)
+    bt.add_argument("--exploratory", action="store_true")
+    bt.add_argument("--margin", type=float)
+    bt.add_argument("--reps", type=int)
+    bt.add_argument("--output")
+    bt.set_defaults(f=cmd_backtest)
     r = sub.add_parser("replay"); r.add_argument("--event", required=True); r.add_argument("--as-of", default="08:00")
     r.add_argument("--model", required=True); r.add_argument("--reveal", action="store_true"); r.add_argument("--full", action="store_true")
     r.add_argument("--drop-last-quote", action="store_true"); r.add_argument("--weather-delay-h", type=float, default=0.0)

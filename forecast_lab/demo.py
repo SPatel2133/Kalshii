@@ -86,9 +86,9 @@ def make_handler(svc, cfg):
     return H
 
 
-def serve(cfg, model_id, port=8765):
+def serve(cfg, model_id, port=8765, host="127.0.0.1"):
     st, fam = load_state(cfg, model_id)
     svc = ReplayService(cfg, st, fam)
-    srv = ThreadingHTTPServer(("0.0.0.0", port), make_handler(svc, cfg))
-    print(f"demo on http://localhost:{port}/ model={model_id}")
+    srv = ThreadingHTTPServer((host, port), make_handler(svc, cfg))
+    print(f"demo on http://{host}:{port}/ model={model_id}")
     srv.serve_forever()

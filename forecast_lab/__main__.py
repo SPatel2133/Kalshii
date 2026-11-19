@@ -241,7 +241,7 @@ def cmd_replay(args):
 
 def cmd_demo(args):
     from . import demo
-    demo.serve(_cfg(args), args.model, args.port)
+    demo.serve(_cfg(args), args.model, args.port, args.host)
 
 
 def main(argv=None):
@@ -263,6 +263,7 @@ def main(argv=None):
     g.set_defaults(f=cmd_golden)
     rp = sub.add_parser("report"); rp.set_defaults(f=cmd_report)
     d = sub.add_parser("demo"); d.add_argument("--model", required=True); d.add_argument("--port", type=int, default=8765)
+    d.add_argument("--host", default="127.0.0.1", help="bind address; loopback by default")
     d.add_argument("--config", dest="config"); d.set_defaults(f=cmd_demo)
     args = ap.parse_args(argv)
     args.f(args)

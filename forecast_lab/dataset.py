@@ -20,6 +20,7 @@ class Sources:
         self.fetcher = Fetcher.from_config(cfg, offline=offline)
         self.events, self.pages = load_catalogue(cfg, offline=offline)
         self._runs = {}
+        self._months = {}
 
     def candles(self, market):
         s, t = candle_range(market)
@@ -34,16 +35,17 @@ class Sources:
         months = tuple(sorted({date(x.year, x.month, 1) for x in (d - timedelta(days=1), d)}))
         key = months
         if key not in self._runs:
-            rows = []
-            metas = []
+            rows, metas = [], []
             for dd in months:
-                try:
-                    r, m = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
-                    rows += r
-                    metas.append(m)
-                except FetchError as e:
-                    metas.append({"failure_class": e.failure_class})
-            self._runs[key] = (weather.index_runs(rows), metas)
+                if dd not in self._months:
+                    try:
+                        self._months[dd] = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
+                    except FetchError as e:
+                        self._months[dd] = ([], {"failure_class": e.failure_class})
+                r, m = self._months[dd]
+                rows += r
+                metas.append(m)
+            self._runs = {key: (weather.index_runs(rows), metas)}  # keep only the latest month window
         return self._runs[key]
 
 

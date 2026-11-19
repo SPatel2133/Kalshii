@@ -33,13 +33,20 @@ def fetch_mos(fetcher, cfg, start, end):
     src = cfg["sources"]
     rows, metas = [], []
     for m0 in month_starts(start - timedelta(days=1), end):
-        m1 = date(m0.year + (m0.month == 12), m0.month % 12 + 1, 1)
-        params = {"station": src["mos_station"], "model": src["mos_model"], "format": "csv",
-                  "sts": f"{m0.isoformat()}T00:00Z", "ets": f"{m1.isoformat()}T00:00Z"}
-        body, meta = fetcher.get(PROVIDER, src["iem_mos"], "", params)
+        r, meta = fetch_mos_month(fetcher, cfg, m0)
         metas.append(meta)
-        rows.extend(parse_mos_csv(body.decode()))
+        rows.extend(r)
     return rows, metas
+
+
+def fetch_mos_month(fetcher, cfg, m0):
+    """Fetch GFS MOS rows for runtimes in the calendar month starting at m0. Returns (rows, meta)."""
+    src = cfg["sources"]
+    m1 = date(m0.year + (m0.month == 12), m0.month % 12 + 1, 1)
+    params = {"station": src["mos_station"], "model": src["mos_model"], "format": "csv",
+              "sts": f"{m0.isoformat()}T00:00Z", "ets": f"{m1.isoformat()}T00:00Z"}
+    body, meta = fetcher.get(PROVIDER, src["iem_mos"], "", params)
+    return parse_mos_csv(body.decode()), meta
 
 
 def _ts(s):

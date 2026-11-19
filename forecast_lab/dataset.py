@@ -37,9 +37,9 @@ class Sources:
             metas = []
             for dd in sorted({date(x.year, x.month, 1) for x in (d - timedelta(days=1), d)}):
                 try:
-                    r, m = weather.fetch_mos(self.fetcher, self.cfg, date(dd.year, dd.month, 1), date(dd.year, dd.month, 1))
+                    r, m = weather.fetch_mos_month(self.fetcher, self.cfg, dd)
                     rows += r
-                    metas += m
+                    metas.append(m)
                 except FetchError as e:
                     metas.append({"failure_class": e.failure_class})
             self._runs[key] = (weather.index_runs(rows), metas)

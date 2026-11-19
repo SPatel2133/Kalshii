@@ -1,0 +1,21 @@
+# NYC is excluded from the six-city confirmatory pool.
+city_configs = [
+  "configs/v3-chi-0800.toml",
+  "configs/v3-mia-0800.toml",
+  "configs/v3-aus-0800.toml",
+  "configs/v3-lax-0800.toml",
+  "configs/v3-den-0800.toml",
+  "configs/v3-phil-0800.toml",
+]
+
+[split]
+test_start = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
+test_end = "PROVISIONAL" # PROVISIONAL - set by docs/v3-preregistration.md
+
+[pool]
+block_days = 7
+block_sensitivity = [3, 14]
+bootstrap_reps = 2000
+seed = 20260813
+h1_threshold = 0.01
+report_threshold = 0.02

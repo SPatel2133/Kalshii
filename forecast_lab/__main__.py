@@ -7,7 +7,7 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import config as C, dataset, download, evaluation as E, weather
+from . import config as C, contracts, dataset, download, evaluation as E, weather
 from .service import ReplayService, load_state, models_dir
 from .util import atomic_write, read_jsonl, sha256_bytes, write_json, write_jsonl
 
@@ -66,20 +66,45 @@ def cmd_audit(args):
 def cmd_download(args):
     cfg = _cfg(args)
     sp = cfg["split"]
-    start, end = date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"])
+    if "download" in cfg:
+        start = date.fromisoformat(cfg["download"]["start"])
+        end = date.fromisoformat(cfg["download"]["end"])
+    else:
+        start, end = date.fromisoformat(sp["dev_start"]), date.fromisoformat(sp["audit_end"])
+    print(f"download range {start} through {end}", flush=True)
     ev, _ = download.load_catalogue(cfg, offline=False)
     st = download.download_candles(cfg, ev, start, end, workers=args.workers)
     print(f"candles ok={st['ok']} failed={len(st['failed'])}")
     src = dataset.Sources(cfg, offline=False)
     d = start
+    previous_month = None
     while d <= end:
+        month = (d.year, d.month)
+        if month != previous_month:
+            print(f"mos month {d:%Y-%m}", flush=True)
+            previous_month = month
         src.mos_runs(d)
         d = (d.replace(day=1) + timedelta(days=32)).replace(day=1)
     print("mos cached")
     if any(f.startswith("obs_") for f in cfg["weather"].get("features", ["nx"])):
         for y in range(start.year, end.year + 1):
             weather.fetch_asos(src.fetcher, cfg, y)  # raises on failure instead of silently zero observations
-        print("asos cached")
+            print(f"asos cached {y}", flush=True)
+
+
+def cmd_catalogue(args):
+    cfg = _cfg(args)
+    events, pages = download.load_catalogue(cfg, offline=False)
+    dates = [contracts.event_date_from_ticker(event_id) for event_id in events]
+    dates = [d for d in dates if d is not None]
+    print(json.dumps({
+        "series": cfg["series"],
+        "markets": sum(len(markets) for markets in events.values()),
+        "events": len(events),
+        "earliest_event_date": min(dates).isoformat() if dates else None,
+        "latest_event_date": max(dates).isoformat() if dates else None,
+        "pages": len(pages),
+    }, indent=1))
 
 
 def cmd_build(args):
@@ -268,6 +293,7 @@ def main(argv=None):
     a = sub.add_parser("audit"); a.add_argument("--series", default=None); a.add_argument("--end", required=True)
     a.add_argument("--days", type=int, default=30); a.add_argument("--offline", action="store_true"); a.set_defaults(f=cmd_audit)
     dl = sub.add_parser("download"); dl.add_argument("--workers", type=int, default=2); dl.set_defaults(f=cmd_download)
+    cat = sub.add_parser("catalogue"); cat.set_defaults(f=cmd_catalogue)
     b = sub.add_parser("build"); b.set_defaults(f=cmd_build)
     f = sub.add_parser("fit"); f.add_argument("--config", dest="config", default=argparse.SUPPRESS); f.set_defaults(f=cmd_fit)
     e = sub.add_parser("evaluate"); e.add_argument("--config", dest="config", default=argparse.SUPPRESS); e.add_argument("--split", choices=["test", "audit"], default="test")

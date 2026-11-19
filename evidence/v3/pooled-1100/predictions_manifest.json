@@ -1,0 +1,13 @@
+{
+  "city_input_predictions_sha256": {
+    "aus-1100": "4e158e45c953edf650ed45517e7fd79f50a264cfe13c8d02a1a9a9ce00cb736f",
+    "chi-1100": "fea19a99a4e53006600307e3a17bf16fd12901773d22dc4691b78b99b73fa2c0",
+    "lax-1100": "50004887865d9b807396a7eea8933659d83da0d8882723c1632be1aa6c3f91b3",
+    "mia-1100": "be64b88c78d5b25abc219026fd5dc1fccaed05e8e1be6e7080c39c51f48a9a6c",
+    "phil-1100": "4bdb8cf45b9b022cf413f1a22bcc65e718444bf23f3ce10ee1dc400dc1d5f276"
+  },
+  "n_predictions": 1140,
+  "pooled_state_sha256": "521ebb4f922ca2d5735100817a4b11bc220e42ab4f9dd574da04e93a69d14b16",
+  "pre_registration_sha": "074fcdea36fc0597b3384b7774d1e8203dad00ae",
+  "predictions_sha256": "8ace1d613dc63da6161cb0be36f91025d1bb7e75fce2818ca3b8a4c905842eac"
+}

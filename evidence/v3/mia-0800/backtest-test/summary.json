@@ -1,0 +1,1059 @@
+{
+  "common_cohort_ids": [
+    "KXHIGHMIA-26FEB28",
+    "KXHIGHMIA-26MAR01",
+    "KXHIGHMIA-26MAR02",
+    "KXHIGHMIA-26MAR03",
+    "KXHIGHMIA-26MAR04",
+    "KXHIGHMIA-26MAR05",
+    "KXHIGHMIA-26MAR06",
+    "KXHIGHMIA-26MAR07",
+    "KXHIGHMIA-26MAR08",
+    "KXHIGHMIA-26MAR09",
+    "KXHIGHMIA-26MAR10",
+    "KXHIGHMIA-26MAR11",
+    "KXHIGHMIA-26MAR12",
+    "KXHIGHMIA-26MAR13",
+    "KXHIGHMIA-26MAR14",
+    "KXHIGHMIA-26MAR15",
+    "KXHIGHMIA-26MAR16",
+    "KXHIGHMIA-26MAR17",
+    "KXHIGHMIA-26MAR18",
+    "KXHIGHMIA-26MAR19",
+    "KXHIGHMIA-26MAR20",
+    "KXHIGHMIA-26MAR21",
+    "KXHIGHMIA-26MAR22",
+    "KXHIGHMIA-26MAR23",
+    "KXHIGHMIA-26MAR24",
+    "KXHIGHMIA-26MAR25",
+    "KXHIGHMIA-26MAR26",
+    "KXHIGHMIA-26MAR27",
+    "KXHIGHMIA-26MAR28",
+    "KXHIGHMIA-26MAR29",
+    "KXHIGHMIA-26MAR30",
+    "KXHIGHMIA-26MAR31",
+    "KXHIGHMIA-26APR01",
+    "KXHIGHMIA-26APR02",
+    "KXHIGHMIA-26APR03",
+    "KXHIGHMIA-26APR04",
+    "KXHIGHMIA-26APR05",
+    "KXHIGHMIA-26APR06",
+    "KXHIGHMIA-26APR07",
+    "KXHIGHMIA-26APR08",
+    "KXHIGHMIA-26APR09",
+    "KXHIGHMIA-26APR10",
+    "KXHIGHMIA-26APR12",
+    "KXHIGHMIA-26APR13",
+    "KXHIGHMIA-26APR14",
+    "KXHIGHMIA-26APR15",
+    "KXHIGHMIA-26APR16",
+    "KXHIGHMIA-26APR17",
+    "KXHIGHMIA-26APR18",
+    "KXHIGHMIA-26APR19",
+    "KXHIGHMIA-26APR20",
+    "KXHIGHMIA-26APR21",
+    "KXHIGHMIA-26APR22",
+    "KXHIGHMIA-26APR23",
+    "KXHIGHMIA-26APR24",
+    "KXHIGHMIA-26APR25",
+    "KXHIGHMIA-26APR26",
+    "KXHIGHMIA-26APR27",
+    "KXHIGHMIA-26APR28",
+    "KXHIGHMIA-26APR29",
+    "KXHIGHMIA-26APR30",
+    "KXHIGHMIA-26MAY01",
+    "KXHIGHMIA-26MAY02",
+    "KXHIGHMIA-26MAY03",
+    "KXHIGHMIA-26MAY04",
+    "KXHIGHMIA-26MAY05",
+    "KXHIGHMIA-26MAY06",
+    "KXHIGHMIA-26MAY07",
+    "KXHIGHMIA-26MAY08",
+    "KXHIGHMIA-26MAY09",
+    "KXHIGHMIA-26MAY10",
+    "KXHIGHMIA-26MAY11",
+    "KXHIGHMIA-26MAY12",
+    "KXHIGHMIA-26MAY13",
+    "KXHIGHMIA-26MAY14",
+    "KXHIGHMIA-26MAY15",
+    "KXHIGHMIA-26MAY16",
+    "KXHIGHMIA-26MAY17",
+    "KXHIGHMIA-26MAY18",
+    "KXHIGHMIA-26MAY19",
+    "KXHIGHMIA-26MAY20",
+    "KXHIGHMIA-26MAY21",
+    "KXHIGHMIA-26MAY22",
+    "KXHIGHMIA-26MAY23",
+    "KXHIGHMIA-26MAY24",
+    "KXHIGHMIA-26MAY25",
+    "KXHIGHMIA-26MAY26",
+    "KXHIGHMIA-26MAY27",
+    "KXHIGHMIA-26MAY28",
+    "KXHIGHMIA-26MAY29",
+    "KXHIGHMIA-26MAY30",
+    "KXHIGHMIA-26MAY31",
+    "KXHIGHMIA-26JUN01",
+    "KXHIGHMIA-26JUN02",
+    "KXHIGHMIA-26JUN03",
+    "KXHIGHMIA-26JUN04",
+    "KXHIGHMIA-26JUN05",
+    "KXHIGHMIA-26JUN06",
+    "KXHIGHMIA-26JUN07",
+    "KXHIGHMIA-26JUN08",
+    "KXHIGHMIA-26JUN09",
+    "KXHIGHMIA-26JUN10",
+    "KXHIGHMIA-26JUN11",
+    "KXHIGHMIA-26JUN12",
+    "KXHIGHMIA-26JUN13",
+    "KXHIGHMIA-26JUN14",
+    "KXHIGHMIA-26JUN15",
+    "KXHIGHMIA-26JUN16",
+    "KXHIGHMIA-26JUN17",
+    "KXHIGHMIA-26JUN18",
+    "KXHIGHMIA-26JUN19",
+    "KXHIGHMIA-26JUN20",
+    "KXHIGHMIA-26JUN21",
+    "KXHIGHMIA-26JUN22",
+    "KXHIGHMIA-26JUN23",
+    "KXHIGHMIA-26JUN24",
+    "KXHIGHMIA-26JUN25",
+    "KXHIGHMIA-26JUN26",
+    "KXHIGHMIA-26JUN27",
+    "KXHIGHMIA-26JUN28",
+    "KXHIGHMIA-26JUN29",
+    "KXHIGHMIA-26JUN30",
+    "KXHIGHMIA-26JUL01",
+    "KXHIGHMIA-26JUL02",
+    "KXHIGHMIA-26JUL03",
+    "KXHIGHMIA-26JUL04",
+    "KXHIGHMIA-26JUL05",
+    "KXHIGHMIA-26JUL06",
+    "KXHIGHMIA-26JUL07",
+    "KXHIGHMIA-26JUL08",
+    "KXHIGHMIA-26JUL09",
+    "KXHIGHMIA-26JUL10",
+    "KXHIGHMIA-26JUL11",
+    "KXHIGHMIA-26JUL12",
+    "KXHIGHMIA-26JUL13",
+    "KXHIGHMIA-26JUL14",
+    "KXHIGHMIA-26JUL15",
+    "KXHIGHMIA-26JUL16",
+    "KXHIGHMIA-26JUL17",
+    "KXHIGHMIA-26JUL18",
+    "KXHIGHMIA-26JUL19",
+    "KXHIGHMIA-26JUL20",
+    "KXHIGHMIA-26JUL21",
+    "KXHIGHMIA-26JUL22",
+    "KXHIGHMIA-26JUL23",
+    "KXHIGHMIA-26JUL24",
+    "KXHIGHMIA-26JUL25",
+    "KXHIGHMIA-26JUL26",
+    "KXHIGHMIA-26JUL27",
+    "KXHIGHMIA-26JUL28",
+    "KXHIGHMIA-26JUL29",
+    "KXHIGHMIA-26JUL30",
+    "KXHIGHMIA-26JUL31",
+    "KXHIGHMIA-26AUG01",
+    "KXHIGHMIA-26AUG02",
+    "KXHIGHMIA-26AUG03",
+    "KXHIGHMIA-26AUG04",
+    "KXHIGHMIA-26AUG05",
+    "KXHIGHMIA-26AUG06",
+    "KXHIGHMIA-26AUG07",
+    "KXHIGHMIA-26AUG08",
+    "KXHIGHMIA-26AUG09",
+    "KXHIGHMIA-26AUG10",
+    "KXHIGHMIA-26AUG11",
+    "KXHIGHMIA-26AUG12",
+    "KXHIGHMIA-26AUG13"
+  ],
+  "common_cohort_n": 166,
+  "decision_by_strategy": {
+    "adaptive_blend": "no supported profit",
+    "favourite_yes": "no supported profit",
+    "fixed_blend": "no supported profit",
+    "market_raw": "no supported profit",
+    "market_recal": "no supported profit",
+    "weather": "no supported profit"
+  },
+  "experiment_id": "v3-mia-0800",
+  "margins": {
+    "adaptive_blend": 0.0,
+    "fixed_blend": 0.0,
+    "market_raw": 0.05,
+    "market_recal": 0.02,
+    "weather": 0.1
+  },
+  "scenarios": [
+    "fee_0x",
+    "fee_1x",
+    "fee_2x",
+    "fee_1x_slippage_1c",
+    "fee_1x_liquidity_cut"
+  ],
+  "split": "test",
+  "strategies": {
+    "adaptive_blend": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.031970658048495464,
+            0.03455914955802676
+          ],
+          "3": [
+            -0.033592814371257475,
+            0.03903778587403505
+          ]
+        },
+        "ci95_block": [
+          -0.03353346620012986,
+          0.03774107142857142
+        ],
+        "contracts": 347,
+        "cost": 228.5,
+        "decision_flags": 0,
+        "hit_rate": 0.659942363112392,
+        "max_drawdown": 2.98,
+        "mean_pnl_per_event": 0.0030120481927710897,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.5000000000000009,
+        "roi": 0.0021881838074398288,
+        "trades": 347
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0019760479041916164
+          ],
+          "3": [
+            0.0,
+            0.001988253012048191
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0019879518072289156
+        ],
+        "contracts": 2,
+        "cost": 1.8900000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0006626506024096384,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.10999999999999999,
+        "roi": 0.05820105820105819,
+        "trades": 2
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0019760479041916164
+          ],
+          "3": [
+            0.0,
+            0.001988253012048191
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0019879518072289156
+        ],
+        "contracts": 2,
+        "cost": 1.8900000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0006626506024096384,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.10999999999999999,
+        "roi": 0.05820105820105819,
+        "trades": 2
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0016167664670658677
+          ],
+          "3": [
+            0.0,
+            0.001626752464403065
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.001626506024096385
+        ],
+        "contracts": 2,
+        "cost": 1.9100000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.000542168674698795,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.08999999999999997,
+        "roi": 0.04712041884816752,
+        "trades": 2
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0003592814371257488
+          ],
+          "3": [
+            0.0,
+            0.000361500547645126
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.00036144578313253046
+        ],
+        "contracts": 1,
+        "cost": 0.98,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.00012048192771084348,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.020000000000000018,
+        "roi": 0.02040816326530614,
+        "trades": 1
+      }
+    },
+    "favourite_yes": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.09869940476190475,
+            0.016746987951807235
+          ],
+          "3": [
+            -0.11031926406926408,
+            0.031863478400342087
+          ]
+        },
+        "ci95_block": [
+          -0.1063110119047619,
+          0.027861313088109487
+        ],
+        "contracts": 166,
+        "cost": 95.68,
+        "decision_flags": 0,
+        "hit_rate": 0.536144578313253,
+        "max_drawdown": 8.23,
+        "mean_pnl_per_event": -0.04024096385542168,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -6.68,
+        "roi": -0.06981605351170568,
+        "trades": 166
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.11863988095238095,
+            -0.0032515060240963993
+          ],
+          "3": [
+            -0.13031599612736663,
+            0.011981046834901522
+          ]
+        },
+        "ci95_block": [
+          -0.12616823495865415,
+          0.008024246150556016
+        ],
+        "contracts": 166,
+        "cost": 98.99000000000001,
+        "decision_flags": 0,
+        "hit_rate": 0.536144578313253,
+        "max_drawdown": 11.26,
+        "mean_pnl_per_event": -0.06018072289156628,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -9.990000000000002,
+        "roi": -0.10091928477624003,
+        "trades": 166
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.11863988095238095,
+            -0.0032515060240963993
+          ],
+          "3": [
+            -0.13031599612736663,
+            0.011981046834901522
+          ]
+        },
+        "ci95_block": [
+          -0.12616823495865415,
+          0.008024246150556016
+        ],
+        "contracts": 166,
+        "cost": 98.99000000000001,
+        "decision_flags": 0,
+        "hit_rate": 0.536144578313253,
+        "max_drawdown": 11.26,
+        "mean_pnl_per_event": -0.06018072289156628,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -9.990000000000002,
+        "roi": -0.10091928477624003,
+        "trades": 166
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.12863988095238096,
+            -0.013251506024096405
+          ],
+          "3": [
+            -0.14031599612736664,
+            0.001981046834901513
+          ]
+        },
+        "ci95_block": [
+          -0.13616823495865418,
+          -0.001975753849443989
+        ],
+        "contracts": 166,
+        "cost": 100.65,
+        "decision_flags": 0,
+        "hit_rate": 0.536144578313253,
+        "max_drawdown": 12.780000000000005,
+        "mean_pnl_per_event": -0.07018072289156628,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -11.650000000000002,
+        "roi": -0.11574764033780428,
+        "trades": 166
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.13785831907613347,
+            -0.022343373493975964
+          ],
+          "3": [
+            -0.14945948078026394,
+            -0.006945867194183187
+          ]
+        },
+        "ci95_block": [
+          -0.14535794482463646,
+          -0.01113755524664959
+        ],
+        "contracts": 166,
+        "cost": 102.15,
+        "decision_flags": 0,
+        "hit_rate": 0.536144578313253,
+        "max_drawdown": 14.170000000000007,
+        "mean_pnl_per_event": -0.07921686746987955,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -13.150000000000006,
+        "roi": -0.1287322564855605,
+        "trades": 166
+      }
+    },
+    "fixed_blend": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.031970658048495464,
+            0.03455914955802676
+          ],
+          "3": [
+            -0.033592814371257475,
+            0.03903778587403505
+          ]
+        },
+        "ci95_block": [
+          -0.03353346620012986,
+          0.03774107142857142
+        ],
+        "contracts": 347,
+        "cost": 228.5,
+        "decision_flags": 0,
+        "hit_rate": 0.659942363112392,
+        "max_drawdown": 2.98,
+        "mean_pnl_per_event": 0.0030120481927710897,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.5000000000000009,
+        "roi": 0.0021881838074398288,
+        "trades": 347
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0019760479041916164
+          ],
+          "3": [
+            0.0,
+            0.001988253012048191
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0019879518072289156
+        ],
+        "contracts": 2,
+        "cost": 1.8900000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0006626506024096384,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.10999999999999999,
+        "roi": 0.05820105820105819,
+        "trades": 2
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0019760479041916164
+          ],
+          "3": [
+            0.0,
+            0.001988253012048191
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0019879518072289156
+        ],
+        "contracts": 2,
+        "cost": 1.8900000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0006626506024096384,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.10999999999999999,
+        "roi": 0.05820105820105819,
+        "trades": 2
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0016167664670658677
+          ],
+          "3": [
+            0.0,
+            0.001626752464403065
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.001626506024096385
+        ],
+        "contracts": 2,
+        "cost": 1.9100000000000001,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.000542168674698795,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.08999999999999997,
+        "roi": 0.04712041884816752,
+        "trades": 2
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0003592814371257488
+          ],
+          "3": [
+            0.0,
+            0.000361500547645126
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.00036144578313253046
+        ],
+        "contracts": 1,
+        "cost": 0.98,
+        "decision_flags": 0,
+        "hit_rate": 1.0,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.00012048192771084348,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0.020000000000000018,
+        "roi": 0.02040816326530614,
+        "trades": 1
+      }
+    },
+    "market_raw": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0
+          ],
+          "3": [
+            0.0,
+            0.0
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0
+        ],
+        "contracts": 0,
+        "cost": 0,
+        "decision_flags": 0,
+        "hit_rate": null,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0,
+        "roi": null,
+        "trades": 0
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0
+          ],
+          "3": [
+            0.0,
+            0.0
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0
+        ],
+        "contracts": 0,
+        "cost": 0,
+        "decision_flags": 0,
+        "hit_rate": null,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0,
+        "roi": null,
+        "trades": 0
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0
+          ],
+          "3": [
+            0.0,
+            0.0
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0
+        ],
+        "contracts": 0,
+        "cost": 0,
+        "decision_flags": 0,
+        "hit_rate": null,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0,
+        "roi": null,
+        "trades": 0
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0
+          ],
+          "3": [
+            0.0,
+            0.0
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0
+        ],
+        "contracts": 0,
+        "cost": 0,
+        "decision_flags": 0,
+        "hit_rate": null,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0,
+        "roi": null,
+        "trades": 0
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            0.0,
+            0.0
+          ],
+          "3": [
+            0.0,
+            0.0
+          ]
+        },
+        "ci95_block": [
+          0.0,
+          0.0
+        ],
+        "contracts": 0,
+        "cost": 0,
+        "decision_flags": 0,
+        "hit_rate": null,
+        "max_drawdown": 0.0,
+        "mean_pnl_per_event": 0.0,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 0,
+        "roi": null,
+        "trades": 0
+      }
+    },
+    "market_recal": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.05163735921015113,
+            0.11777590902532283
+          ],
+          "3": [
+            -0.05139520958083833,
+            0.13501190476190467
+          ]
+        },
+        "ci95_block": [
+          -0.055575474051896195,
+          0.128516369047619
+        ],
+        "contracts": 284,
+        "cost": 207.38,
+        "decision_flags": 0,
+        "hit_rate": 0.7535211267605634,
+        "max_drawdown": 7.58,
+        "mean_pnl_per_event": 0.03987951807228915,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 6.619999999999999,
+        "roi": 0.03192207541710869,
+        "trades": 284
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.02773925363558597,
+            0.08065495912220308
+          ],
+          "3": [
+            -0.028384730538922168,
+            0.08201309506317953
+          ]
+        },
+        "ci95_block": [
+          -0.027264092082616178,
+          0.08184729991394148
+        ],
+        "contracts": 97,
+        "cost": 63.4,
+        "decision_flags": 0,
+        "hit_rate": 0.7010309278350515,
+        "max_drawdown": 2.4800000000000004,
+        "mean_pnl_per_event": 0.027710843373493967,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 4.599999999999999,
+        "roi": 0.07255520504731859,
+        "trades": 97
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.02773925363558597,
+            0.08065495912220308
+          ],
+          "3": [
+            -0.028384730538922168,
+            0.08201309506317953
+          ]
+        },
+        "ci95_block": [
+          -0.027264092082616178,
+          0.08184729991394148
+        ],
+        "contracts": 97,
+        "cost": 63.4,
+        "decision_flags": 0,
+        "hit_rate": 0.7010309278350515,
+        "max_drawdown": 2.4800000000000004,
+        "mean_pnl_per_event": 0.027710843373493967,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 4.599999999999999,
+        "roi": 0.07255520504731859,
+        "trades": 97
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.034055710008554334,
+            0.07491242514970058
+          ],
+          "3": [
+            -0.03425449101796408,
+            0.07634759748795089
+          ]
+        },
+        "ci95_block": [
+          -0.0330564139577987,
+          0.07603012048192766
+        ],
+        "contracts": 97,
+        "cost": 64.37,
+        "decision_flags": 0,
+        "hit_rate": 0.7010309278350515,
+        "max_drawdown": 2.63,
+        "mean_pnl_per_event": 0.02186746987951806,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 3.629999999999998,
+        "roi": 0.056392729532390835,
+        "trades": 97
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.008989440761334481,
+            0.05951673055859801
+          ],
+          "3": [
+            -0.00716951735513483,
+            0.05726299187339605
+          ]
+        },
+        "ci95_block": [
+          -0.009822307085484799,
+          0.06018364529546756
+        ],
+        "contracts": 38,
+        "cost": 24.830000000000002,
+        "decision_flags": 0,
+        "hit_rate": 0.7631578947368421,
+        "max_drawdown": 1.56,
+        "mean_pnl_per_event": 0.02512048192771084,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": 4.169999999999999,
+        "roi": 0.16794200563834066,
+        "trades": 38
+      }
+    },
+    "weather": {
+      "decision": "no supported profit",
+      "fee_0x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.11281990483319077,
+            0.03288323353293409
+          ],
+          "3": [
+            -0.1254770102651839,
+            0.045151197604790416
+          ]
+        },
+        "ci95_block": [
+          -0.11455389221556886,
+          0.03439776965002868
+        ],
+        "contracts": 333,
+        "cost": 112.68,
+        "decision_flags": 0,
+        "hit_rate": 0.3183183183183183,
+        "max_drawdown": 10.749999999999998,
+        "mean_pnl_per_event": -0.04024096385542168,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -6.68,
+        "roi": -0.05928292509762158,
+        "trades": 333
+      },
+      "fee_1x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.14363299294268608,
+            -0.017595393550248965
+          ],
+          "3": [
+            -0.15720944717707444,
+            5.98983850480735e-05
+          ]
+        },
+        "ci95_block": [
+          -0.14544782122501984,
+          -0.015169642857142927
+        ],
+        "contracts": 299,
+        "cost": 103.29,
+        "decision_flags": 0,
+        "hit_rate": 0.3010033444816054,
+        "max_drawdown": 15.810000000000002,
+        "mean_pnl_per_event": -0.08006024096385544,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -13.290000000000003,
+        "roi": -0.1286668602962533,
+        "trades": 299
+      },
+      "fee_1x_liquidity_cut": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.14363299294268608,
+            -0.017595393550248965
+          ],
+          "3": [
+            -0.15720944717707444,
+            5.98983850480735e-05
+          ]
+        },
+        "ci95_block": [
+          -0.14544782122501984,
+          -0.015169642857142927
+        ],
+        "contracts": 299,
+        "cost": 103.29,
+        "decision_flags": 0,
+        "hit_rate": 0.3010033444816054,
+        "max_drawdown": 15.810000000000002,
+        "mean_pnl_per_event": -0.08006024096385544,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -13.290000000000003,
+        "roi": -0.1286668602962533,
+        "trades": 299
+      },
+      "fee_1x_slippage_1c": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.1637754491017964,
+            -0.03556217083904486
+          ],
+          "3": [
+            -0.17615019004589794,
+            -0.01713494439692051
+          ]
+        },
+        "ci95_block": [
+          -0.1640579954548734,
+          -0.03311559411297898
+        ],
+        "contracts": 299,
+        "cost": 106.31,
+        "decision_flags": 0,
+        "hit_rate": 0.3010033444816054,
+        "max_drawdown": 18.6,
+        "mean_pnl_per_event": -0.09825301204819278,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -16.310000000000002,
+        "roi": -0.15341924560248332,
+        "trades": 299
+      },
+      "fee_2x": {
+        "block_days": 7,
+        "block_sensitivity": {
+          "14": [
+            -0.15388459687767322,
+            -0.0296972891566265
+          ],
+          "3": [
+            -0.16618758019674937,
+            -0.007175630881094998
+          ]
+        },
+        "ci95_block": [
+          -0.15470907292557742,
+          -0.025283826213946797
+        ],
+        "contracts": 277,
+        "cost": 96.59,
+        "decision_flags": 0,
+        "hit_rate": 0.296028880866426,
+        "max_drawdown": 16.54,
+        "mean_pnl_per_event": -0.08789156626506024,
+        "n_events": 166,
+        "n_events_dropped_liquidity": 0,
+        "pnl": -14.59,
+        "roi": -0.15105083341960865,
+        "trades": 277
+      }
+    }
+  },
+  "window": [
+    "2026-02-28",
+    "2026-08-13"
+  ]
+}

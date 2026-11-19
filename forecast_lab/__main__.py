@@ -18,7 +18,8 @@ def _cfg(args):
 
 def cmd_audit(args):
     cfg = _cfg(args)
-    args.series = args.series or cfg["series"]
+    if args.series is None:
+        args.series = cfg["series"]
     if args.series != cfg["series"]:
         sys.exit(f"--series {args.series} does not match config series {cfg['series']}; use a config for that series")
     end = date.fromisoformat(args.end)

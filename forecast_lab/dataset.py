@@ -46,11 +46,12 @@ class Sources:
         return self._runs[key]
 
 
-def build_event(src, event_id, local_hhmm="08:00", lag_h=None, scenario=None, drop_last_quote=False,
+def build_event(src, event_id, local_hhmm=None, lag_h=None, scenario=None, drop_last_quote=False,
                 weather_delay_h=0.0):
     """Return (rules, label, weather_rec, feature_row, provenance) for one event at one as-of time."""
     cfg = src.cfg
     lag_h = cfg["weather"]["lag_h"] if lag_h is None else lag_h
+    local_hhmm = local_hhmm or cfg["cutoff_local"]
     markets = src.events.get(event_id, [])
     d = contracts.event_date_from_ticker(event_id)
     cut = replay.cutoff_utc(d, local_hhmm)

@@ -18,6 +18,7 @@ def _cfg(args):
 
 def cmd_audit(args):
     cfg = _cfg(args)
+    args.series = args.series or cfg["series"]
     if args.series != cfg["series"]:
         sys.exit(f"--series {args.series} does not match config series {cfg['series']}; use a config for that series")
     end = date.fromisoformat(args.end)
@@ -251,7 +252,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="forecast_lab")
     ap.add_argument("--config", default=None)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("audit"); a.add_argument("--series", default="KXHIGHNY"); a.add_argument("--end", required=True)
+    a = sub.add_parser("audit"); a.add_argument("--series", default=None); a.add_argument("--end", required=True)
     a.add_argument("--days", type=int, default=30); a.add_argument("--offline", action="store_true"); a.set_defaults(f=cmd_audit)
     dl = sub.add_parser("download"); dl.add_argument("--workers", type=int, default=2); dl.set_defaults(f=cmd_download)
     b = sub.add_parser("build"); b.set_defaults(f=cmd_build)

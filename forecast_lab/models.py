@@ -127,42 +127,63 @@ class WeatherModel:
     """T ~ N(mu, sigma), mu = X @ beta, log sigma = X_s @ gamma (seasonal). Target integer T; the CLI reports
     integer degrees F so integer t occupies [t-0.5, t+0.5) — the half-degree mapping."""
 
-    def __init__(self, beta=None, gamma=None, converged=None, n=0, nll=None, message=None):
+    def __init__(self, beta=None, gamma=None, converged=None, n=0, nll=None, message=None, features=None):
         self.beta, self.gamma, self.converged, self.n, self.nll, self.message = beta, gamma, converged, n, nll, message
+        self.features = list(features or [])
 
     @staticmethod
     def _sdesign(doys):
         ang = 2 * np.pi * np.asarray(doys, float) / 365.25
         return np.column_stack([np.ones_like(ang), np.cos(ang), np.sin(ang)])
 
-    def fit(self, nx, doys, lo, hi, l2=1e-3):
+    def fit(self, nx, doys, lo, hi, extras=None, names=(), l2=1e-3):
         """lo/hi: inclusive integer interval truth per event (exact value => lo == hi); None = open tail."""
         X = weather_design(nx, doys)
+        names = list(names)
+        if extras is None:
+            if names:
+                raise ValueError("weather feature names require matching extra values")
+            E = np.empty((len(X), 0))
+        else:
+            E = np.asarray(extras, dtype=float)
+            if E.ndim == 1:
+                E = E.reshape(-1, 1)
+            if E.shape != (len(X), len(names)):
+                raise ValueError("weather extras and feature names must have matching columns")
+        if E.shape[1]:
+            X = np.column_stack([X, E])
         S = self._sdesign(doys)
         a = np.array([-np.inf if l is None else l - 0.5 for l in lo])
         b = np.array([np.inf if h is None else h + 0.5 for h in hi])
         xm, xs = X[:, 1].mean(), X[:, 1].std() + 1e-9
 
         def nll(theta):
-            beta, gamma = theta[:4], theta[4:]
+            split = 4 + E.shape[1]
+            beta, gamma = theta[:split], theta[split:]
             mu = X @ beta
             sig = np.exp(S @ gamma)
             ll = log_interval_mass((a - mu) / sig, (b - mu) / sig)
-            return -ll.sum() + l2 * (theta[2:4] @ theta[2:4] + theta[5:] @ theta[5:])
+            return -ll.sum() + l2 * (beta[2:] @ beta[2:] + gamma[1:] @ gamma[1:])
 
-        theta0 = np.array([0.0, 1.0, 0.0, 0.0, math.log(3.0), 0.0, 0.0])
+        theta0 = np.concatenate([np.array([0.0, 1.0, 0.0, 0.0]), np.zeros(E.shape[1]),
+                                 np.array([math.log(3.0), 0.0, 0.0])])
         res = minimize(nll, theta0, method="L-BFGS-B", options={"maxiter": 2000, "gtol": 1e-7})
-        self.beta, self.gamma = res.x[:4].tolist(), res.x[4:].tolist()
+        split = 4 + E.shape[1]
+        self.beta, self.gamma = res.x[:split].tolist(), res.x[split:].tolist()
         self.converged, self.n, self.nll, self.message = bool(res.success), len(a), float(res.fun), str(res.message)
+        self.features = names
         return self
 
-    def params(self, nx, d_oy):
+    def params(self, nx, d_oy, extras=None):
         X = weather_design([nx], [d_oy])
+        if self.features:
+            values = np.zeros((1, len(self.features))) if extras is None else np.asarray(extras, float).reshape(1, -1)
+            X = np.column_stack([X, values])
         S = self._sdesign([d_oy])
         return float((X @ np.array(self.beta))[0]), float(np.exp(S @ np.array(self.gamma))[0])
 
-    def pmf(self, support, nx, d_oy):
-        mu, sig = self.params(nx, d_oy)
+    def pmf(self, support, nx, d_oy, extras=None):
+        mu, sig = self.params(nx, d_oy, extras)
         edges = np.concatenate([[support.lo - 0.5], support.temps + 0.5])
         from scipy.special import ndtr
         cdf = ndtr((edges - mu) / sig)
@@ -174,12 +195,16 @@ class WeatherModel:
         return p / p.sum()
 
     def state(self):
-        return {"beta": self.beta, "gamma": self.gamma, "converged": self.converged, "n": self.n,
-                "nll": self.nll, "message": self.message}
+        state = {"beta": self.beta, "gamma": self.gamma, "converged": self.converged, "n": self.n,
+                 "nll": self.nll, "message": self.message}
+        if self.features:
+            state["features"] = self.features
+        return state
 
     @classmethod
     def from_state(cls, s):
-        return cls(s["beta"], s["gamma"], s["converged"], s["n"], s["nll"], s.get("message"))
+        return cls(s["beta"], s["gamma"], s["converged"], s["n"], s["nll"], s.get("message"),
+                   s.get("features", []))
 
 
 # ---------------------------------------------------------------- market recalibration

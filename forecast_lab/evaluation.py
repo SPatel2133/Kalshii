@@ -86,11 +86,37 @@ def truth_interval(row, lab):
 
 # ---------------------------------------------------------------- upstream fit / predict
 
+def weather_inputs(cfg, row):
+    features = cfg["weather"].get("features", ["nx"])
+    if not features or features[0] != "nx":
+        raise ValueError("weather.features must start with 'nx'")
+    supported = {"nx", "sampled_minus_nx", "obs_max_minus_nx", "obs_latest_minus_nx"}
+    unknown = set(features) - supported
+    if unknown:
+        raise ValueError(f"unsupported weather features: {sorted(unknown)}")
+    selected = row["weather"].get("selected") or {}
+    nx = selected.get("mos_daytime_max_f")
+    obs = row["weather"].get("obs") or {}
+    values = []
+    for name in features[1:]:
+        if name == "sampled_minus_nx":
+            value = selected.get("sampled_max_local_f")
+            values.append(float(value - nx) if value is not None and nx is not None else 0.0)
+        elif name == "obs_max_minus_nx":
+            value = obs.get("obs_max_so_far_f")
+            values.append(float(max(0.0, value - nx)) if value is not None and nx is not None else 0.0)
+        elif name == "obs_latest_minus_nx":
+            value = obs.get("obs_latest_f")
+            values.append(float(value - nx) if value is not None and nx is not None else 0.0)
+    return nx, values, list(features[1:])
+
+
 def fit_upstream(cfg, feats, labels, train_ids, lam=None):
     sup = M.Support(cfg["support"]["lo_f"], cfg["support"]["hi_f"])
     floor = cfg["models"]["prob_floor"]
     vals, doys = [], []
-    wx_nx, wx_doy, wx_lo, wx_hi = [], [], [], []
+    wx_nx, wx_doy, wx_lo, wx_hi, wx_extras = [], [], [], [], []
+    wx_names = None
     mids, wins, ctx = [], [], []
     for e in train_ids:
         r, lab = feats[e], labels[e]
@@ -100,10 +126,13 @@ def fit_upstream(cfg, feats, labels, train_ids, lam=None):
             vals.append(lab["settled_value_f"])
             doys.append(dy)
         if r["weather"]["status"] == "available":
-            wx_nx.append(r["weather"]["selected"]["mos_daytime_max_f"])
+            nx, extras, names = weather_inputs(cfg, r)
+            wx_nx.append(nx)
             wx_doy.append(dy)
             wx_lo.append(lo)
             wx_hi.append(hi)
+            wx_extras.append(extras)
+            wx_names = names
         mv = market_vector(r)
         if mv is not None:
             mids.append(np.array(mv))
@@ -115,7 +144,10 @@ def fit_upstream(cfg, feats, labels, train_ids, lam=None):
         "train_last": feats[train_ids[-1]]["event_date"] if train_ids else None,
         "latest_settlement": max((labels[e]["settlement_ts"] for e in train_ids), default=None),
         "clim_values": vals, "clim_doys": doys}
-    st["weather"] = M.WeatherModel().fit(wx_nx, wx_doy, wx_lo, wx_hi).state() if len(wx_nx) >= 30 else None
+    st["weather"] = M.WeatherModel().fit(
+        wx_nx, wx_doy, wx_lo, wx_hi,
+        extras=np.asarray(wx_extras) if wx_names else None, names=wx_names or ()
+    ).state() if len(wx_nx) >= 30 else None
     st["recal"] = M.fit_recal_scalar(mids, wins, floor) if len(mids) >= 30 else None
     st["context"] = M.fit_recal_context(mids, wins, ctx, floor, cfg["models"]["recal_l2"]) if len(mids) >= 30 else None
     st["lambda"] = lam
@@ -159,9 +191,9 @@ def predict_upstream(cfg, st, row, lams=None):
                         "diagnostics": diag, "quote_weights": r.tolist()}
     if row["weather"]["status"] == "available" and st["weather"]:
         wm = M.WeatherModel.from_state(st["weather"])
-        nx = row["weather"]["selected"]["mos_daytime_max_f"]
-        pw = wm.pmf(sup, nx, dy)
-        mu, sig = wm.params(nx, dy)
+        nx, extras, _ = weather_inputs(cfg, row)
+        pw = wm.pmf(sup, nx, dy, extras)
+        mu, sig = wm.params(nx, dy, extras)
         out["weather"] = {"support": pw, "buckets": A @ pw, "mode": "model", "mu": mu, "sigma": sig}
     out["_A"] = A
     return out
@@ -330,7 +362,8 @@ def fit(cfg, feats, labels, boundary=None, log=print):
     for key in ["market_raw", "market_recal", "market_context", "weather", "coherent", "climatology"]:
         oof_scores[key] = nll_of(key, both)
     state = {
-        "experiment_id": cfg["experiment_id"], "config_sha256": cfg["_sha256"], "feature_version": FEATURE_VERSION,
+        "experiment_id": cfg["experiment_id"], "config_sha256": cfg["_sha256"],
+        "feature_version": cfg.get("feature_version", FEATURE_VERSION),
         "fit_boundary": boundary.isoformat(), "fit_boundary_utc": bdt.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "seed": cfg["models"]["seed"], "upstream": final_up, "fixed_blend": fixed, "gate": gates["gate"],
         "gate_raw": gates["gate_raw"], "gate_l2_search": l2_search, "correction": correction,

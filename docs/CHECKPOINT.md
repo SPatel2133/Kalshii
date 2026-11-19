@@ -15,9 +15,11 @@ Release gates: golden real replay (tests/test_golden_real.py), explicit reveal, 
 
 ## V3 registered-data checkpoint
 
-The v3 worktree is `/home/ubuntu/repos/Kalshii-v3`; its `data/cache` symlink points to the shared cache used by v2. Raw downloads stay under ignored `data/`. Catalogue requests and bulk downloads are resumable from the cache. The registered five-city pool excludes Denver; do not download Denver.
+The v3 worktree is `/home/ubuntu/repos/Kalshii-v3`; its `data/cache` symlink points to the shared cache used by v2. Raw downloads stay under ignored `data/`. The pre-registration commit is `074fcdea36fc0597b3384b7774d1e8203dad00ae`; catalogue requests and bulk downloads are resumable from the cache. The registered five-city pool excludes Denver; do not download Denver.
 
 The five confirmatory city ranges are frozen in their configs and run sequentially with two workers. Each command appends progress to that city's log:
+
+The restarted queue is active under wrapper PID `58645`: CHI and MIA completed; AUS is downloading candles (worker PID `60668`); LAX, PHIL, and NYC remain queued. Do not start a second queue. The wrapper will continue through those cities sequentially.
 
 ```sh
 cd /home/ubuntu/repos/Kalshii-v3

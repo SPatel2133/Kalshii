@@ -1,0 +1,15 @@
+[project]
+name = "forecast-lab"
+version = "0.1.0"
+description = "Kalshi Forecast Lab: replay KXHIGHNY at 08:00 New York, compare market, weather and learned forecasts"
+requires-python = ">=3.11"
+dependencies = ["numpy==2.2.6", "scipy==1.15.3"]
+
+[project.optional-dependencies]
+test = ["pytest==8.3.5"]
+
+[tool.setuptools]
+packages = ["forecast_lab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

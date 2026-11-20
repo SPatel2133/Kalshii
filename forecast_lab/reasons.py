@@ -1,0 +1,20 @@
+"""Stable vocabulary for coverage and fallback reasons."""
+MISSING_CATALOGUE = "missing_catalogue"
+MISSING_RULE_EVIDENCE = "missing_rule_evidence"
+OTHER_REGIME = "other_regime"
+INVALID_PARTITION = "invalid_bucket_partition"
+NOT_LISTED_BY_CUTOFF = "not_listed_by_cutoff"
+QUOTES_UNAVAILABLE = "quotes_unavailable"
+QUOTES_STALE = "quotes_stale"
+CROSSED_BOOK = "crossed_book"
+PARTIAL_BOARD = "partial_board"
+FETCH_FAILED = "fetch_failed"
+FORECAST_UNAVAILABLE = "forecast_unavailable_by_cutoff"
+FORECAST_MISSING_FIELD = "forecast_missing_field"
+SETTLEMENT_UNRESOLVED = "settlement_unresolved"
+SETTLEMENT_EXCEPTIONAL = "settlement_exceptional"
+LABEL_SETTLED_AFTER_FIT = "label_settled_after_fit_boundary"
+NO_USABLE_PREDICTORS = "no_usable_predictors"
+
+# Funnel order: the first failing stage is the single primary exclusion reason.
+FUNNEL = ["catalogue", "rules_valid", "quote_complete", "weather_available", "label_valid", "common_cohort"]

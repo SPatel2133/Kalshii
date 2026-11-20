@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Kalshi Forecast Lab</title>
+<style>
+body{font:14px/1.4 system-ui,sans-serif;margin:20px;max-width:1150px;color:#111}
+h1{font-size:20px;margin:0 0 4px}.sub{color:#555;margin-bottom:12px}
+fieldset{border:1px solid #ccc;padding:8px 12px;margin:8px 0}legend{font-weight:600}
+table{border-collapse:collapse;width:100%;margin:6px 0}th,td{border:1px solid #ddd;padding:3px 6px;text-align:right}
+th{background:#f4f4f4}td.l,th.l{text-align:left}.bar{display:inline-block;height:9px;background:#3b6fd4;vertical-align:middle}
+.wbar{background:#d48a3b}.mbar{background:#888}.warn{color:#a40;font-weight:600}.ok{color:#070}
+.win{background:#e7f6e7;font-weight:700}code{font-size:12px}.muted{color:#666}#err{color:#b00}
+pre{background:#f7f7f7;padding:6px;overflow:auto;max-height:260px;font-size:12px}
+button{padding:4px 10px;margin-right:6px}
+</style></head><body>
+<h1>Kalshi Forecast Lab — KXHIGHNY replay</h1>
+<div class="sub">Rewind a real Kalshi NYC high-temperature event to 08:00 New York time. See the market odds, an independent weather forecast and the trained model. Then reveal the settled outcome.</div>
+<fieldset><legend>Replay</legend>
+Event date <input id="date" type="date"> or <select id="ev"></select>
+&nbsp;As of (NY) <input id="asof" value="08:00" size="5"> <span class="muted">(08:00 = frozen benchmark; other times are exploratory)</span><br>
+What-if: <label><input type="checkbox" id="dropq"> hide latest quote</label>
+<label>delay weather availability by <input id="wdel" value="0" size="3"> h</label>
+&nbsp;<button id="go">Replay</button><button id="gold">Golden case</button>
+<span id="model" class="muted"></span>
+<div id="show" class="muted"></div>
+</fieldset>
+<div id="err"></div>
+<div id="out" hidden>
+<fieldset><legend>Event and rules</legend><div id="rules"></div></fieldset>
+<fieldset><legend>Board at cutoff, with forecasts (pre-reveal; no outcome data loaded)</legend>
+<table id="tbl"></table><div id="mstat"></div></fieldset>
+<fieldset><legend>Weather input</legend><div id="wx"></div></fieldset>
+<fieldset><legend>Threshold query (sums the same model distribution)</legend>
+P(high ≥ <input id="tlo" size="3"> °F and ≤ <input id="thi" size="3"> °F) <button id="tq">Query</button> <span id="tres"></span></fieldset>
+<fieldset><legend>Outcome</legend><button id="rev">Reveal settled outcome</button><div id="revout"></div></fieldset>
+<fieldset><legend>Provenance</legend><div id="prov"></div><details><summary>raw replay response</summary><pre id="raw"></pre></details></fieldset>
+</div>
+<script>
+const $=id=>document.getElementById(id);let cur=null,curq=null,evs=[],golden=null;
+const pct=x=>x==null?'—':(100*x).toFixed(1)+'%';const f2=x=>x==null?'—':(+x).toFixed(2);
+const rng=b=>b.lo==null?`≤ ${b.hi}`:b.hi==null?`≥ ${b.lo}`:`${b.lo}–${b.hi}`;
+async function j(u){const r=await fetch(u);const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);return d}
+function bar(p,c){return `<span class="bar ${c||''}" style="width:${Math.round(120*(p||0))}px"></span>`}
+async function init(){const d=await j('/api/events');evs=d.events;golden=d.golden;$('model').textContent='model '+d.model_id;
+ $('ev').innerHTML=evs.map(e=>`<option value="${e.event_id}">${e.event_date} ${e.event_id} [${e.split}]</option>`).join('');
+ $('ev').value=golden;$('date').value=evs.find(e=>e.event_id==golden).event_date;
+ const s=await j('/api/showcase');if(s.available)$('show').innerHTML=`Held-out test examples vs ${s.comparator}: <a href="#" data-e="${s.favourable}">favourable ${s.favourable}</a> · <a href="#" data-e="${s.failure}">failure ${s.failure}</a> <span class="muted">(${s.note})</span>`;
+ document.querySelectorAll('#show a').forEach(a=>a.onclick=e=>{e.preventDefault();$('ev').value=a.dataset.e;run()});}
+$('date').onchange=()=>{const e=evs.find(e=>e.event_date==$('date').value);if(e)$('ev').value=e.event_id;else $('err').textContent='No KXHIGHNY event in the experiment window for that date'};
+$('ev').onchange=()=>{$('date').value=evs.find(e=>e.event_id==$('ev').value).event_date};
+$('go').onclick=run;$('gold').onclick=()=>{$('ev').value=golden;$('asof').value='08:00';$('dropq').checked=false;$('wdel').value=0;run()};
+async function run(){$('err').textContent='';$('revout').innerHTML='';
+ const q=new URLSearchParams({event:$('ev').value,as_of:$('asof').value,drop_last_quote:$('dropq').checked?1:0,weather_delay_h:$('wdel').value||0});
+ try{cur=await j('/api/replay?'+q);curq=q}catch(e){$('err').textContent=e.message;return}render(cur)}
+function render(r){$('out').hidden=false;const p=r.prediction,s=r.sources;
+ const flags=[];if(r.exploratory_horizon)flags.push('<span class="warn">EXPLORATORY horizon (not the frozen 08:00 benchmark)</span>');
+ if(r.what_if)flags.push(`<span class="warn">WHAT-IF scenario: ${r.scenario}</span>`);
+ $('rules').innerHTML=`<b>${r.event_id}</b> · ${r.event_date} · split: ${r.split}<br>Cutoff: <b>${r.as_of_local} America/New_York = ${r.cutoff_utc}</b> ${flags.join(' ')}<br>
+ Regime: <b>${r.rules.regime}</b> · Station: ${r.rules.station} · Day: ${r.rules.day_convention}<br>Partition check: ${r.rules.partition_check}<br><span class="muted">${r.rules.rules_primary_example||''}</span>`;
+ const pr=k=>s[k]&&s[k].probabilities;let h=`<tr><th class="l">Ticker</th><th>Range °F</th><th>Bid</th><th>Ask</th><th>Mid</th><th>Quote obs (UTC)</th><th>Age h</th><th>Last trade candle</th><th>Market (norm. mid)</th><th>Coherent</th><th>Weather</th><th class="l">Model: ${p.mode}</th></tr>`;
+ r.buckets.forEach((b,i)=>{const m=pr('market_raw'),c=pr('coherent'),w=pr('weather'),pm=p.probabilities;
+  h+=`<tr data-b="${b.bucket_id}"><td class="l"><code>${b.ticker}</code></td><td>${rng(b)}</td><td>${f2(b.bid)}</td><td>${f2(b.ask)}</td><td>${f2(b.mid)}</td><td>${b.quote_obs_utc||b.disposition}</td><td>${b.quote_age_h==null?'—':b.quote_age_h.toFixed(1)}</td><td>${b.last_traded_candle_utc||'none'}</td>
+  <td>${m?pct(m[i]):'—'}</td><td>${c?pct(c[i]):'—'}</td><td>${w?pct(w[i]):'—'}</td><td class="l">${pm?bar(pm[i])+' '+pct(pm[i]):'—'}</td></tr>`});
+ $('tbl').innerHTML=h;$('mstat').innerHTML=`Market status: <b>${r.market_status}</b>${p.reason?' · fallback reason: <span class="warn">'+p.reason+'</span>':''}${r.flags.length?' · flags: '+r.flags.join(', '):''}`;
+ const w=r.weather,sel=w.selected;$('wx').innerHTML=w.status=='available'?`Source ${w.source_id} · run <b>${sel.runtime_utc}</b> · assumed available ${sel.available_utc} (${w.availability_basis}, lag ${w.lag_h} h) · MOS daytime max (n_x, 12Z–00Z proxy) <b>${sel.mos_daytime_max_f}°F</b> · sampled 3-hourly max ${sel.sampled_max_f??'—'}°F${s.weather.mode=='model'?'':''}`
+  :`<span class="warn">Weather unavailable at cutoff: ${w.reason}</span>`;
+ const pv=r.provenance,cd=pv.coherent_diagnostics;
+ $('prov').innerHTML=`Model <code>${r.model_id}</code> · state ${pv.state_sha256.slice(0,12)} · fit boundary ${pv.fit_boundary}<br>Replay fingerprint <code>${r.replay_fingerprint}</code><br>Prediction fingerprint <code>${p.prediction_fingerprint}</code><br>
+ Gate weight on market: <b>${pv.gate==null?'—':pv.gate.toFixed(3)}</b> ${pv.gate_inputs?'(inputs JS, spread, max age, σ = '+pv.gate_inputs.map(x=>(+x).toFixed(3)).join(', ')+')':''}<br>
+ ${cd?`Coherent: converged ${cd.converged}, λ=${cd.lambda}, Σbid=${cd.sum_bid.toFixed(2)}, Σask=${cd.sum_ask.toFixed(2)}, max |residual| ${cd.max_abs_residual.toFixed(4)}${cd.fallback?' fallback '+cd.fallback:''}<br>Quote residuals: ${cd.residuals.map(x=>x.toFixed(3)).join(', ')}`:'Coherent: unavailable'}<br>
+ Fetch failures: ${pv.fetch_failures.length?JSON.stringify(pv.fetch_failures):'none'} · candle payload hashes: ${Object.values(pv.candles).map(c=>c.sha256.slice(0,10)).join(', ')}`;
+ $('raw').textContent=JSON.stringify(r,null,1)}
+$('tq').onclick=async()=>{const q=new URLSearchParams(curq);q.set('lo',$('tlo').value);q.set('hi',$('thi').value);
+ try{const d=await j('/api/threshold?'+q);$('tres').textContent=d.available?`= ${pct(d.probability)} (${d.model_id})`:'unavailable: '+d.reason}catch(e){$('tres').textContent=e.message}};
+$('rev').onclick=async()=>{const d=await j('/api/reveal?'+curq);const l=d.label;
+ if(!l){$('revout').textContent='No label';return}
+ document.querySelectorAll('#tbl tr').forEach(t=>t.classList.toggle('win',t.dataset.b==l.winner_bucket));
+ let h=`Settled: winner <b>${l.winner_bucket}</b> (<code>${l.winner_ticker}</code>) · CLI high ${l.settled_value_f??'—'}°F · settled ${l.settlement_ts} ${l.reasons.length?'<span class="warn">'+l.reasons.join(', ')+'</span>':''}`;
+ if(d.evaluation){h+='<table><tr><th class="l">Family</th><th>Mode</th><th>P(winner)</th><th>Log loss</th><th>Brier</th></tr>'+Object.entries(d.evaluation).map(([k,v])=>`<tr><td class="l">${k}</td><td>${v.mode}</td><td>${pct(v.p_winner)}</td><td>${f2(v.log_loss)}</td><td>${f2(v.brier)}</td></tr>`).join('')+'</table>'}
+ $('revout').innerHTML=h};
+init().then(run).catch(e=>$('err').textContent=e.message);
+</script></body></html>

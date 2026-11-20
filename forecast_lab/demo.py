@@ -103,7 +103,8 @@ def make_handler(svc, cfg):
                             evs.append({"event_id": e, "event_date": d.isoformat(), "split": split_of(cfg, d)})
                             default_events[e] = svc.src.events[e]
                     return self._send(200, {"events": evs, "model_id": f"{svc.state['experiment_id']}.{svc.family}@{svc.state['fit_boundary']}",
-                                            "golden": default_event(cfg, default_events)})
+                                            "golden": default_event(cfg, default_events),
+                                            "cutoff": cfg["cutoff_local"]})
                 if u.path == "/api/replay":
                     r = svc.replay(q["event"], q.get("as_of", "08:00"), drop_last_quote=q.get("drop_last_quote") == "1",
                                    weather_delay_h=float(q.get("weather_delay_h", 0) or 0))

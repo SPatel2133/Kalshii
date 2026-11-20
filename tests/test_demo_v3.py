@@ -123,3 +123,26 @@ def test_chi_demo_events_and_development_replay_without_audit_window():
 
     assert replay_body["event_id"] == event_id
     assert replay_body["split"].startswith("development")
+
+
+def test_intraday_demo_events_return_configured_cutoff():
+    cfg = load_config("configs/v3-chi-1100.toml")
+    event_id = "KXHIGHCHI-26AUG13"
+    svc = SimpleNamespace(
+        family="adaptive_blend",
+        state={"experiment_id": cfg["experiment_id"], "fit_boundary": cfg["split"]["test_start"]},
+        src=SimpleNamespace(events={event_id: [{"rules_primary": "National Weather Service"}]}),
+    )
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(svc, cfg))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(f"http://127.0.0.1:{server.server_port}/api/events", timeout=5) as response:
+            body = json.loads(response.read())
+            assert response.status == 200
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert body["cutoff"] == "11:00"

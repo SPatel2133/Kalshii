@@ -1,53 +1,114 @@
 # Kalshi Forecast Lab
 
-**Product contract.** Rewind an actual Kalshi market to 8 a.m. New York time. Show the historical market odds, an independent weather forecast, and a trained model's forecast. Then reveal the settled outcome. On later events, test whether the learned model improves on the market and a strong fixed blend.
+[![CI](https://github.com/SPatel2133/Kalshii/actions/workflows/ci.yml/badge.svg)](https://github.com/SPatel2133/Kalshii/actions/workflows/ci.yml)
 
-Series: `KXHIGHNY` (NYC Central Park daily high, NWS CLI settlement regime). The project uses public read-only data only. It does not trade, does not use credentials, and runs the demo locally.
+**Can a weather model beat a prediction market on its own turf, and could you make money doing it?**
 
-Spec and timing assumptions: [docs/experiment.md](docs/experiment.md). Results: [evidence/nyc-0800-v1/REPORT.md](evidence/nyc-0800-v1/REPORT.md).
+Kalshi lists daily contracts on each city's high temperature. This project rewinds every historical market to a fixed
+morning cutoff. It rebuilds exactly what was knowable then: order-book quotes, the latest NWS forecast that had been
+published, and observations so far. It then compares the market against weather models, learned blends, and fee-aware paper
+trading strategies, all under pre-registered, leakage-guarded evaluation.
 
-## Versioned experiment `nyc-0800-v2`
+**Answer, from three versioned experiments:** no. Across 6 cities and about 1,400 held-out events, nothing beat the market by a
+meaningful margin, and no strategy made supported money after Kalshi's fees. Building the measurement carefully enough to
+trust a null result is the point of the project.
 
-V2 is a separate experiment, opened after v1 test scoring. It was chosen from v1's documented limitations, not from v1 test-set losses. Its frozen configuration is `configs/nyc-0800-v2.toml`; it adds an America/New_York full-day sampled MOS maximum, cached morning ASOS observations with a 10-minute latency guard, an expanded weather model, and explicit exclusion of empty latest quote books. The v1 configuration, evidence, fixture and work directory remain unchanged. Details and assumptions are in [docs/experiment.md](docs/experiment.md).
+Research only: public read-only data, no trading, no credentials.
 
-Build, fit, and inspect only the development and audit windows while the test block is closed:
+## Results
 
-```sh
-$PY -m forecast_lab --config configs/nyc-0800-v2.toml build
-$PY -m forecast_lab fit --config configs/nyc-0800-v2.toml
-$PY -m forecast_lab evaluate --config configs/nyc-0800-v2.toml --split audit
-$PY -m forecast_lab golden --config configs/nyc-0800-v2.toml --model nyc-0800-v2.adaptive_blend@2025-10-01
+| Experiment | Question | Held-out result |
+|---|---|---|
+| [v1](evidence/nyc-0800-v1/REPORT.md) NYC, 287 events | Does an adaptive market + weather blend beat a fixed blend? | No: Δ = +0.0001 nats, 95% CI [−0.00005, +0.0003]. The fixed blend puts 100% weight on the market. |
+| [v2](evidence/nyc-0800-v2/REPORT.md) NYC, 287 events | Do a full-day forecast proxy and morning observations help? | Weather model improves by 0.16 nats (CI [−0.22, −0.10]), but it still trails the market (1.44 vs 0.99), and blends stay ≈ market. |
+| [v3](evidence/v3/REPORT.md) 5 new cities, 1,140 events | Pre-registered: does sharpening market odds (p^α, α ≈ 1.2) help, and is it profitable after fees? | Log loss Δ = −0.0063, CI [−0.0146, +0.0016]: not supported. P&L = −$0.0010 per event, CI [−0.0049, +0.0028]: no supported profit. |
+
+<p align="center">
+  <img src="docs/figures/pnl_0800.svg" width="48%" alt="Paper P&L per strategy after fees">
+  <img src="docs/figures/logloss_by_cutoff.svg" width="48%" alt="Log loss by cutoff">
+</p>
+
+The weather model loses money (−$0.053 per event), and buying the favourite breaks even before fees but loses after them.
+Later in the day the market's lead over the weather model *grows*, from 0.46 to 0.62 nats. The exploratory 14:00 cutoff shows
+the strongest calibration gain (Δ −0.019, CI excludes 0), which is the hypothesis for a future pre-registered test.
+
+## How it works
+
+```
+Kalshi archive (catalogue + hourly candles)    IEM: GFS MOS forecasts, ASOS observations
+          │                                                │
+          ▼                                                ▼
+ rules parser ── settlement regime, station, buckets   strict as-of selector (runtime + 7.5 h lag,
+          │                                              obs ≤ cutoff − 10 min, NWS LST climate day)
+          └──────────────► as-of snapshot at 08:00 local ◄─┘   (labels kept in a separate file)
+                                   │
+          market · recalibrated market · weather (censored-normal) · coherent · fixed / adaptive blends
+                                   │
+          chronological 5-fold OOF fit ─► frozen state ─► sealed test predictions (sha256 before scoring)
+                                   │
+          log loss + calendar-block bootstrap CIs      fee-aware paper backtest (label-blind decisions)
 ```
 
-The v2 `weather_delay_h` what-if delays only the MOS run; ASOS observations retain their configured cutoff-latency window. V2 has not been scored on the test split.
+Engineering choices worth a look:
+- **Leakage guards.** Each feature row is built only from data timestamped before the cutoff. Labels live in a separate file, and the
+  decision function has no label argument; a test asserts this. Pre-reveal API responses are checked against an allowlist.
+- **Pre-registration.** v3 committed its hypotheses, splits, thresholds and strategy rules
+  ([docs/v3-preregistration.md](docs/v3-preregistration.md)) before any test scoring. Development fits and frozen trading margins
+  were committed next, then test scoring, and the commit history shows that order.
+- **Statistics.** Paired moving-block bootstrap over calendar dates (7-day primary, 3- and 14-day sensitivity). Same-date events
+  across cities stay in one block because weather is correlated. Holm correction for per-city tests.
+- **Realistic costs.** Kalshi's official taker fee, ceil-to-cent(0.07·C·P·(1−P)) ([docs/fees.md](docs/fees.md)), with 0×/2× fee,
+  +1¢ slippage and liquidity sensitivities.
+- **Reproducibility.** Every HTTP response is cached by request key with sha256 manifests. Rebuilds are byte-identical (tests check
+  feature hashes and golden replay fingerprints), and the per-event evidence is committed as deterministic gzip with checksums.
+- **Data audit findings, fixed rather than ignored.** Kalshi switched settlement source from the NWS to The Weather Company on
+  2026-08-14, so only NWS-regime days are used. Candles appear only when the order book changes, so quotes carry forward under a
+  24 h freshness rule. Empty books are excluded. The NWS climate day runs midnight to midnight *standard* time, which v2 got wrong
+  and v3 corrects ([docs/v2-erratum.md](docs/v2-erratum.md)).
+
+## Replay demo
+
+A local standard-library server with a plain HTML/JS page. It rewinds a real market to 08:00, shows the market odds, the
+forecast and the model's forecast, and then reveals the settled outcome on request. It also supports what-if toggles (hide the
+latest quote, delay the forecast) and threshold queries.
+
+![Replay demo](docs/figures/demo.png)
+
+```sh
+python3.12 -m venv .venv && .venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m forecast_lab --config configs/v3-nyc-0800.toml demo --model v3-nyc-0800.adaptive_blend@2025-10-01
+# open http://127.0.0.1:8765/
+```
+
+The demo and full rebuilds need the local data cache (`python -m forecast_lab --config <config> download`, about 1 h per city). Raw
+Kalshi and IEM payloads are not committed because their redistribution terms are unclear.
 
 ## Reproduce
 
 ```sh
-python3.12 -m venv .venv && .venv/bin/pip install -r requirements.txt
-export PY=.venv/bin/python
-$PY -m forecast_lab audit --series KXHIGHNY --end 2026-08-13 --days 30   # fetch + cache + 30-day coverage audit
-$PY -m forecast_lab download                                           # all candles/MOS for the experiment window (resumable)
-$PY -m forecast_lab fit --config configs/nyc-0800-v1.toml
-$PY -m forecast_lab evaluate --config configs/nyc-0800-v1.toml --split test
-$PY -m forecast_lab replay --event KXHIGHNY-26AUG13 --as-of 08:00 --model nyc-0800-v1.adaptive_blend@2025-10-01
-$PY -m forecast_lab replay --event KXHIGHNY-26AUG13 --model nyc-0800-v1.adaptive_blend@2025-10-01 --reveal
-$PY -m forecast_lab demo --model nyc-0800-v1.adaptive_blend@2025-10-01  # http://localhost:8765/
-$PY -m pytest -q
+.venv/bin/python -m pytest -q          # offline; tests that need the data cache skip without it
+.venv/bin/python -m ruff check .
+.venv/bin/python scripts/make_figures.py   # figures from committed evidence
 ```
 
-Raw Kalshi and IEM responses are cached under `data/cache/`, keyed by request and SHA-256. They are kept out of Git because redistribution terms are unclear. `evidence/` contains the fetch parameters, payload checksums, coverage tables, per-event predictions and summaries. `tests/fixtures/` contains only the minimal derived golden-case fields. The tests run offline. Tests that need the local cache are skipped when it is absent.
+Full pipeline commands (download → build → fit → evaluate → backtest → pooled) are in [docs/CHECKPOINT.md](docs/CHECKPOINT.md);
+experiment specs are in [docs/experiment.md](docs/experiment.md) and [docs/v3-preregistration.md](docs/v3-preregistration.md).
+
+## Limitations
+
+- Fills are assumed in full at the quoted bid/ask; the candles carry no depth. This is the main optimism in the backtest.
+- MOS publication time is assumed to be runtime + 7.5 h (archive timestamps record model runtime only), with an 11 h strict rerun.
+- The current fee schedule (effective 2026-07-07) is applied to the whole history.
+- Weather-Company-regime days, Denver and some ambiguous older rule wordings are excluded by design.
 
 ## Layout
 
-`forecast_lab/`
-- `fetch.py`: cache, retries and manifest.
-- `kalshi.py`: catalogue and candles.
-- `contracts.py`: rules, partition and labels.
-- `weather.py`: IEM MOS.
-- `replay.py`: strict as-of snapshot.
-- `dataset.py`: build and coverage funnel.
-- `models.py`: all model families.
-- `evaluation.py`: chronological fit, scoring and block bootstrap.
-- `service.py`: outcome-free replay and explicit reveal.
-- `demo.py` + `demo.html`: local screen.
+| Path | Contents |
+|---|---|
+| `forecast_lab/` | `fetch` (cache, retries), `kalshi`, `contracts` (rules → buckets/labels), `weather` (MOS/ASOS), `replay` (as-of snapshot), `dataset`, `models`, `evaluation`, `backtest`, `pooled`, `service` + `demo` |
+| `configs/` | one frozen TOML per experiment / city / cutoff |
+| `evidence/` | reports, summaries, sealed predictions, trades, checksums |
+| `docs/` | experiment specs, pre-registration, fees, erratum, figures |
+| `tests/` | offline synthetic tests and real-cache regression tests |
+
+MIT licensed.

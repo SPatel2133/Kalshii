@@ -7,7 +7,11 @@ import sys
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import backtest as B, config as C, contracts, dataset, download, evaluation as E, pooled as P, v3, weather
+from . import backtest as B
+from . import config as C
+from . import contracts, dataset, download, v3, weather
+from . import evaluation as E
+from . import pooled as P
 from .service import ReplayService, load_state, models_dir
 from .util import atomic_write, read_bytes_maybe_gz, read_jsonl, sha256_bytes, write_json, write_jsonl
 
@@ -34,15 +38,15 @@ def cmd_audit(args):
     out = Path(cfg["paths"]["evidence_dir"]) / f"audit-{args.series}-{start}-{end}"
     rules, labels, feats, cov = dataset.build_all(cfg, start, end, out / "records")
     fun = dataset.funnel(cov)
-    lab_by = {l["event_id"]: l for l in labels if l}
+    lab_by = {label["event_id"]: label for label in labels if label}
     rows = []
     for c in cov:
         f = next((x for x in feats if x["event_id"] == c["event_id"]), None)
-        l = lab_by.get(c["event_id"])
+        label = lab_by.get(c["event_id"])
         rows.append({"event_date": c["event_date"], "event_id": c["event_id"] or "", "regime": c.get("regime") or "",
                      "n_buckets": c.get("n_buckets", 0), "market_status": (f or {}).get("market_status", ""),
                      "weather_runtime": c.get("weather_runtime") or "", "weather_status": ((f or {}).get("weather") or {}).get("status", ""),
-                     "label_ok": bool(l and not l["reasons"]), "settlement_ts": c.get("settlement_ts") or "",
+                     "label_ok": bool(label and not label["reasons"]), "settlement_ts": c.get("settlement_ts") or "",
                      "stage_failed": c["stage_failed"] or "", "primary_reason": c["primary_reason"] or "",
                      "flags": ";".join(c["flags"]), "replay_fingerprint": (f or {}).get("fingerprint", "")})
     buf = io.StringIO()
@@ -212,9 +216,11 @@ def cmd_evaluate(args):
 def cmd_golden(args):
     """Write the golden replay fixture (derived pre-cutoff fields + frozen predictions) for regression tests."""
     cfg = _cfg(args)
+    ev = cfg["split"].get("golden_event")
+    if not ev:
+        raise SystemExit("golden command requires split.golden_event (available in v1/v2 configs)")
     st, fam = load_state(cfg, args.model)
     svc = ReplayService(cfg, st, fam)
-    ev = cfg["split"]["golden_event"]
     r = svc.replay(ev)
     rev = svc.reveal(ev)
     selected = r["weather"]["selected"]
@@ -428,10 +434,17 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="forecast_lab")
     ap.add_argument("--config", default=None)
     sub = ap.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("audit"); a.add_argument("--series", default=None); a.add_argument("--end", required=True)
-    a.add_argument("--days", type=int, default=30); a.add_argument("--offline", action="store_true"); a.set_defaults(f=cmd_audit)
-    dl = sub.add_parser("download"); dl.add_argument("--workers", type=int, default=2); dl.set_defaults(f=cmd_download)
-    cat = sub.add_parser("catalogue"); cat.set_defaults(f=cmd_catalogue)
+    a = sub.add_parser("audit")
+    a.add_argument("--series", default=None)
+    a.add_argument("--end", required=True)
+    a.add_argument("--days", type=int, default=30)
+    a.add_argument("--offline", action="store_true")
+    a.set_defaults(f=cmd_audit)
+    dl = sub.add_parser("download")
+    dl.add_argument("--workers", type=int, default=2)
+    dl.set_defaults(f=cmd_download)
+    cat = sub.add_parser("catalogue")
+    cat.set_defaults(f=cmd_catalogue)
     vs = sub.add_parser("v3-splits")
     vs.add_argument("--pooled", required=True)
     vs.set_defaults(f=cmd_v3_splits)
@@ -441,9 +454,14 @@ def main(argv=None):
     pool.set_defaults(f=cmd_pooled)
     nr = sub.add_parser("nyc-reanalysis")
     nr.set_defaults(f=cmd_nyc_reanalysis)
-    b = sub.add_parser("build"); b.set_defaults(f=cmd_build)
-    f = sub.add_parser("fit"); f.add_argument("--config", dest="config", default=argparse.SUPPRESS); f.set_defaults(f=cmd_fit)
-    e = sub.add_parser("evaluate"); e.add_argument("--config", dest="config", default=argparse.SUPPRESS); e.add_argument("--split", choices=["test", "audit"], default="test")
+    b = sub.add_parser("build")
+    b.set_defaults(f=cmd_build)
+    f = sub.add_parser("fit")
+    f.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    f.set_defaults(f=cmd_fit)
+    e = sub.add_parser("evaluate")
+    e.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    e.add_argument("--split", choices=["test", "audit"], default="test")
     e.set_defaults(f=cmd_evaluate)
     bt = sub.add_parser("backtest")
     bt.add_argument("--config", dest="config", default=argparse.SUPPRESS)
@@ -453,16 +471,28 @@ def main(argv=None):
     bt.add_argument("--reps", type=int)
     bt.add_argument("--output")
     bt.set_defaults(f=cmd_backtest)
-    r = sub.add_parser("replay"); r.add_argument("--event", required=True); r.add_argument("--as-of", default="08:00")
-    r.add_argument("--model", required=True); r.add_argument("--reveal", action="store_true"); r.add_argument("--full", action="store_true")
-    r.add_argument("--drop-last-quote", action="store_true"); r.add_argument("--weather-delay-h", type=float, default=0.0)
-    r.add_argument("--config", dest="config", default=argparse.SUPPRESS); r.set_defaults(f=cmd_replay)
-    g = sub.add_parser("golden"); g.add_argument("--model", required=True); g.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    r = sub.add_parser("replay")
+    r.add_argument("--event", required=True)
+    r.add_argument("--as-of", default="08:00")
+    r.add_argument("--model", required=True)
+    r.add_argument("--reveal", action="store_true")
+    r.add_argument("--full", action="store_true")
+    r.add_argument("--drop-last-quote", action="store_true")
+    r.add_argument("--weather-delay-h", type=float, default=0.0)
+    r.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    r.set_defaults(f=cmd_replay)
+    g = sub.add_parser("golden")
+    g.add_argument("--model", required=True)
+    g.add_argument("--config", dest="config", default=argparse.SUPPRESS)
     g.set_defaults(f=cmd_golden)
-    rp = sub.add_parser("report"); rp.set_defaults(f=cmd_report)
-    d = sub.add_parser("demo"); d.add_argument("--model", required=True); d.add_argument("--port", type=int, default=8765)
+    rp = sub.add_parser("report")
+    rp.set_defaults(f=cmd_report)
+    d = sub.add_parser("demo")
+    d.add_argument("--model", required=True)
+    d.add_argument("--port", type=int, default=8765)
     d.add_argument("--host", default="127.0.0.1", help="bind address; loopback by default")
-    d.add_argument("--config", dest="config", default=argparse.SUPPRESS); d.set_defaults(f=cmd_demo)
+    d.add_argument("--config", dest="config", default=argparse.SUPPRESS)
+    d.set_defaults(f=cmd_demo)
     args = ap.parse_args(argv)
     args.f(args)
 

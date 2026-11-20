@@ -7,7 +7,6 @@ import pytest
 
 from forecast_lab.util import read_bytes_maybe_gz
 
-
 EVIDENCE = Path(__file__).resolve().parents[1] / "evidence" / "v3"
 if not EVIDENCE.is_dir():
     pytest.skip("v3 evidence is absent", allow_module_level=True)

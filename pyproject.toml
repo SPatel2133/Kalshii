@@ -3,10 +3,19 @@ name = "forecast-lab"
 version = "0.1.0"
 description = "Kalshi Forecast Lab: replay KXHIGHNY at 08:00 New York, compare market, weather and learned forecasts"
 requires-python = ">=3.11"
+license = {text = "MIT"}
 dependencies = ["numpy==2.2.6", "scipy==1.15.3"]
 
 [project.optional-dependencies]
 test = ["pytest==8.3.5"]
+dev = ["pytest==8.3.5", "ruff==0.6.9", "matplotlib==3.9.2"]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "W", "I"]
+ignore = ["E501"]
 
 [tool.setuptools]
 packages = ["forecast_lab"]

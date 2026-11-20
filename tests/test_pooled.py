@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
 
-from forecast_lab import models as M, pooled as P
+from forecast_lab import models as M
+from forecast_lab import pooled as P
 from forecast_lab.replay import market_vector
 
 

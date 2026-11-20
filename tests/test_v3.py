@@ -5,7 +5,8 @@ from datetime import date, datetime, timedelta, timezone
 import numpy as np
 import pytest
 
-from forecast_lab import backtest, contracts, evaluation, pooled, reasons as R, v3, weather
+from forecast_lab import backtest, contracts, evaluation, pooled, v3, weather
+from forecast_lab import reasons as R
 
 
 def test_fee_table_known_values_and_integer_cents():

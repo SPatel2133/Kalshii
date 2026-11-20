@@ -1,10 +1,12 @@
 import copy
 import random
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 
 import pytest
 
-from forecast_lab import config as C, contracts, evaluation as E, replay
+from forecast_lab import config as C
+from forecast_lab import contracts, replay
+from forecast_lab import evaluation as E
 from tests.synth import candle, markets
 
 
@@ -51,8 +53,8 @@ def synth_data():
     feats, labels = {}, {}
     d = date(2025, 1, 1)
     while d <= date(2025, 8, 31):
-        r, l = synth_event(d, rng)
-        feats[r["event_id"]], labels[r["event_id"]] = r, l
+        row, label = synth_event(d, rng)
+        feats[row["event_id"]], labels[row["event_id"]] = row, label
         d += timedelta(days=1)
     return feats, labels
 

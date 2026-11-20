@@ -5,7 +5,7 @@ raw candles per ticker and a weather input record. The snapshot fingerprint cove
 inputs plus FEATURE_VERSION/REPLAY_VERSION, never retrieval time.
 """
 import math
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import datetime, time, timezone
 from zoneinfo import ZoneInfo
 
 from . import FEATURE_VERSION, REPLAY_VERSION

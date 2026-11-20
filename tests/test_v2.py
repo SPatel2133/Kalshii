@@ -11,7 +11,10 @@ import numpy as np
 import pytest
 from scipy.optimize import minimize
 
-from forecast_lab import config as C, contracts, dataset, evaluation as E, models as M, replay, weather
+from forecast_lab import config as C
+from forecast_lab import dataset, replay, weather
+from forecast_lab import evaluation as E
+from forecast_lab import models as M
 from forecast_lab import reasons as R
 from forecast_lab.service import ReplayService, assert_outcome_free, top_level_allowlisted
 from tests.synth import candle, markets
@@ -77,7 +80,6 @@ def _old_weather_fit(nx, doys, lo, hi, l2=1e-3):
     S = M.WeatherModel._sdesign(doys)
     a = np.array([-np.inf if x is None else x - 0.5 for x in lo])
     b = np.array([np.inf if x is None else x + 0.5 for x in hi])
-    xm, xs = X[:, 1].mean(), X[:, 1].std() + 1e-9
 
     def nll(theta):
         beta, gamma = theta[:4], theta[4:]

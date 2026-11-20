@@ -1,9 +1,8 @@
 """Label-blind decisions and after-cost paper settlement."""
 import math
 from datetime import date
-from decimal import Decimal, ROUND_CEILING
+from decimal import ROUND_CEILING, Decimal
 
-from . import models as M
 from .evaluation import block_bootstrap
 
 STRATEGIES = ("market_raw", "market_recal", "fixed_blend", "adaptive_blend", "weather")
@@ -200,14 +199,12 @@ def run_backtest(cfg, predictions, features, labels, start, end, margins, split,
                 bids, asks = quote_cents(buckets)
                 if strategy == "favourite_yes":
                     decision = favourite_yes(buckets)
-                    margin = None
                 else:
                     family = by_event[event_id].get(strategy)
                     if family is None or family.get("mode") != "model":
                         continue
                     decision = decide(family["probabilities"], bids, asks,
                                       margins[strategy], fee_mult, bt["fee_rate"], bt["contracts"])
-                    margin = margins[strategy]
                 decision_flags += len(decision.flags)
                 decision_trades = []
                 for trade in decision:

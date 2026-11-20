@@ -179,6 +179,17 @@ def run_backtest(cfg, predictions, features, labels, start, end, margins, split,
               and not labels[event_id].get("reasons")]
     if not cohort:
         raise ValueError("backtest requires a nonempty five-family common cohort")
+    for event_id in cohort:
+        feature = features[event_id]
+        expected = {
+            "replay_fingerprint": feature.get("fingerprint"),
+            "cutoff_utc": feature.get("cutoff_utc"),
+            "bucket_ids": [bucket["bucket_id"] for bucket in feature["buckets"]],
+        }
+        for prediction in by_event[event_id].values():
+            if any(field in prediction and prediction[field] != value
+                   for field, value in expected.items()):
+                raise ValueError(f"predictions were sealed against a different snapshot: {event_id}")
     strategies = list(STRATEGIES)
     if any("market_recal_pooled" in families for families in by_event.values()):
         strategies.append("market_recal_pooled")

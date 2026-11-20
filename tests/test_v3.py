@@ -182,6 +182,45 @@ def test_backtest_common_cohort_matches_evaluation_common_families():
     assert cohort == [event_id]
 
 
+@pytest.mark.parametrize(
+    "field,bad_value",
+    [
+        ("replay_fingerprint", "different-fingerprint"),
+        ("cutoff_utc", "2026-01-01T15:00:00Z"),
+        ("bucket_ids", ["b2", "b1"]),
+    ],
+)
+def test_backtest_rejects_predictions_sealed_against_different_snapshot(field, bad_value):
+    event_id = "KXHIGHCHI-26JAN01"
+    feature = {
+        "event_id": event_id,
+        "event_date": "2026-01-01",
+        "fingerprint": "feature-fingerprint",
+        "cutoff_utc": "2026-01-01T14:00:00Z",
+        "buckets": [
+            {"bucket_id": "b1", "bid": 0.4, "ask": 0.6},
+            {"bucket_id": "b2", "bid": 0.4, "ask": 0.6},
+        ],
+    }
+    predictions = [
+        {"event_id": event_id, "family": family, "mode": "model", "probabilities": [0.5, 0.5],
+         "replay_fingerprint": "feature-fingerprint", "cutoff_utc": feature["cutoff_utc"],
+         "bucket_ids": ["b1", "b2"]}
+        for family in backtest.COMMON_FAMILIES
+    ]
+    predictions[0][field] = bad_value
+    labels = {event_id: {"winner_bucket": "b1", "reasons": []}}
+
+    with pytest.raises(
+        ValueError, match=f"predictions were sealed against a different snapshot: {event_id}"
+    ):
+        backtest.run_backtest(
+            {"experiment_id": "test"}, predictions, {event_id: feature}, labels,
+            date(2026, 1, 1), date(2026, 1, 1),
+            dict.fromkeys(backtest.STRATEGIES, 0.0), "test",
+        )
+
+
 def test_pooled_alpha_uses_all_prior_city_rows_and_excludes_late_settlements():
     rows = {
         "target": [

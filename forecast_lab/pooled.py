@@ -38,16 +38,38 @@ def _pool_label_cutoff(pool_cfg):
     return None
 
 
-def _rows_before_label_cutoff(rows, label_cutoff):
+def _pool_label_cutoff_utc(pool_cfg, city_configs):
+    label_cutoff = _pool_label_cutoff(pool_cfg)
+    if label_cutoff is None:
+        return None
+    return min(
+        cutoff_utc(label_cutoff, cfg["cutoff_local"],
+                   cfg.get("timezone", "America/New_York"))
+        for cfg in city_configs.values()
+    )
+
+
+def _rows_before_label_cutoff(rows, label_cutoff, label_cutoff_utc=None, labels=None):
     if label_cutoff is None:
         return rows
-    return [row for row in rows if date.fromisoformat(row["event_date"]) < label_cutoff]
+    selected = []
+    for row in rows:
+        if date.fromisoformat(row["event_date"]) >= label_cutoff:
+            continue
+        if labels is None:
+            settled_at_utc = row.get("settled_at_utc")
+        else:
+            settled_at_utc = (labels.get(row["event_id"]) or {}).get("settlement_ts")
+        if settled_at_utc and _as_utc(settled_at_utc) < label_cutoff_utc:
+            selected.append(row)
+    return selected
 
 
-def _fit_pooled_alpha_for_pool(pool_cfg, dev_rows, floor):
+def _fit_pooled_alpha_for_pool(pool_cfg, city_configs, dev_rows, floor):
     label_cutoff = _pool_label_cutoff(pool_cfg)
+    label_cutoff_utc = _pool_label_cutoff_utc(pool_cfg, city_configs)
     fit_rows = dev_rows if label_cutoff is None else {
-        city: _rows_before_label_cutoff(rows, label_cutoff)
+        city: _rows_before_label_cutoff(rows, label_cutoff, label_cutoff_utc)
         for city, rows in dev_rows.items()
     }
     return fit_pooled_alpha(fit_rows, floor)
@@ -56,10 +78,11 @@ def _fit_pooled_alpha_for_pool(pool_cfg, dev_rows, floor):
 def _select_pooled_margin_for_pool(pool_cfg, city_configs, oof_rows, features, labels,
                                    margins, fee_rate, contracts):
     label_cutoff = _pool_label_cutoff(pool_cfg)
+    label_cutoff_utc = _pool_label_cutoff_utc(pool_cfg, city_configs)
     boundary = (label_cutoff if label_cutoff is not None else
                 max(date.fromisoformat(cfg["split"]["test_start"])
                     for cfg in city_configs.values()))
-    margin_rows = _rows_before_label_cutoff(oof_rows, label_cutoff)
+    margin_rows = _rows_before_label_cutoff(oof_rows, label_cutoff, label_cutoff_utc, labels)
     return B.select_margin(margin_rows, features, labels, boundary, margins, fee_rate, contracts)
 
 
@@ -393,7 +416,7 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
     floors = {cfg["models"]["prob_floor"] for cfg in city_configs.values()}
     if len(floors) != 1:
         raise ValueError("pooled cities must use a common probability floor")
-    pooled_alpha_fit = _fit_pooled_alpha_for_pool(pool_cfg, dev_rows, floors.pop())
+    pooled_alpha_fit = _fit_pooled_alpha_for_pool(pool_cfg, city_configs, dev_rows, floors.pop())
     pooled_alpha = pooled_alpha_fit["alpha"]
     for city, cfg in city_configs.items():
         state = json.loads((models_dir(cfg) /
@@ -453,6 +476,7 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
         state.update({
             "leak_free": True,
             "label_cutoff": label_cutoff.isoformat(),
+            "label_cutoff_utc": _pool_label_cutoff_utc(pool_cfg, city_configs).isoformat(),
             "exploratory": _pooled_is_exploratory(pool_cfg, city_configs),
         })
     write_json(output_dir / "pooled_state.json", state)
@@ -840,6 +864,7 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
         output_summary.update({
             "leak_free": True,
             "label_cutoff": frozen["label_cutoff"],
+            "label_cutoff_utc": frozen["label_cutoff_utc"],
         })
     write_json(output_dir / "summary.json", output_summary)
     write_jsonl(output_dir / "trades.jsonl", pooled_trades)

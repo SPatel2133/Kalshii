@@ -251,24 +251,50 @@ def test_leak_free_pool_limits_global_alpha_and_margin_rows(monkeypatch):
     label_cutoff = "2025-06-24"
     dev_rows = {
         "chi": [
-            {"event_id": "CHI_BEFORE", "event_date": "2025-06-23"},
+            {"event_id": "CHI_BEFORE", "event_date": "2025-06-23",
+             "settled_at_utc": "2025-06-24T11:59:00Z"},
         ],
         "aus": [
-            {"event_id": "AUS_BEFORE", "event_date": "2025-06-23"},
-            {"event_id": "AUS_ON_CUTOFF", "event_date": label_cutoff},
-            {"event_id": "AUS_AFTER", "event_date": "2025-06-25"},
+            {"event_id": "AUS_BEFORE", "event_date": "2025-06-23",
+             "settled_at_utc": "2025-06-24T11:59:00Z"},
+            {"event_id": "AUS_LATE_SETTLEMENT", "event_date": "2025-06-23",
+             "settled_at_utc": "2025-06-24T12:30:00Z"},
+            {"event_id": "AUS_ON_CUTOFF", "event_date": label_cutoff,
+             "settled_at_utc": "2025-06-24T11:00:00Z"},
+            {"event_id": "AUS_AFTER", "event_date": "2025-06-25",
+             "settled_at_utc": "2025-06-25T11:00:00Z"},
         ],
     }
     oof_rows = [
         {"event_id": "OOF_BEFORE", "event_date": "2025-06-23"},
+        {"event_id": "OOF_LATE_SETTLEMENT", "event_date": "2025-06-23"},
         {"event_id": "OOF_ON_CUTOFF", "event_date": label_cutoff},
         {"event_id": "OOF_AFTER", "event_date": "2025-06-25"},
     ]
     city_configs = {
-        "chi": {"split": {"test_start": label_cutoff}},
-        "aus": {"split": {"test_start": "2025-07-01"}},
+        "chi": {
+            "split": {"test_start": label_cutoff},
+            "cutoff_local": "08:00",
+            "timezone": "America/Chicago",
+        },
+        "aus": {
+            "split": {"test_start": "2025-07-01"},
+            "cutoff_local": "08:00",
+            "timezone": "America/Los_Angeles",
+        },
+        "mia": {
+            "split": {"test_start": "2025-07-01"},
+            "cutoff_local": "08:00",
+            "timezone": "America/New_York",
+        },
     }
     pool_cfg = {"leak_free": True, "split": {"test_start": label_cutoff}}
+    labels = {
+        "OOF_BEFORE": {"settlement_ts": "2025-06-24T11:59:00Z"},
+        "OOF_LATE_SETTLEMENT": {"settlement_ts": "2025-06-24T12:30:00Z"},
+        "OOF_ON_CUTOFF": {"settlement_ts": "2025-06-24T11:00:00Z"},
+        "OOF_AFTER": {"settlement_ts": "2025-06-25T11:00:00Z"},
+    }
     alpha_rows_seen = {}
     margin_rows_seen = {}
 
@@ -286,9 +312,9 @@ def test_leak_free_pool_limits_global_alpha_and_margin_rows(monkeypatch):
     monkeypatch.setattr(P, "fit_pooled_alpha", record_alpha)
     monkeypatch.setattr(P.B, "select_margin", record_margin)
 
-    P._fit_pooled_alpha_for_pool(pool_cfg, dev_rows, 1e-4)
+    P._fit_pooled_alpha_for_pool(pool_cfg, city_configs, dev_rows, 1e-4)
     P._select_pooled_margin_for_pool(
-        pool_cfg, city_configs, oof_rows, {}, {}, [0.0], 0.07, 1)
+        pool_cfg, city_configs, oof_rows, {}, labels, [0.0], 0.07, 1)
 
     assert alpha_rows_seen == {
         "chi": ["CHI_BEFORE"],
@@ -298,6 +324,7 @@ def test_leak_free_pool_limits_global_alpha_and_margin_rows(monkeypatch):
         "event_ids": ["OOF_BEFORE"],
         "boundary": date.fromisoformat(label_cutoff),
     }
+    assert P._pool_label_cutoff_utc(pool_cfg, city_configs).isoformat() == "2025-06-24T12:00:00+00:00"
 
 
 def test_default_pool_includes_rows_after_earliest_city_test_start(monkeypatch):
@@ -330,9 +357,10 @@ def test_default_pool_includes_rows_after_earliest_city_test_start(monkeypatch):
     monkeypatch.setattr(P, "fit_pooled_alpha", record_alpha)
     monkeypatch.setattr(P.B, "select_margin", record_margin)
 
-    P._fit_pooled_alpha_for_pool({"split": {"test_start": "2025-06-24"}}, dev_rows, 1e-4)
+    pool_cfg = {"split": {"test_start": "2025-06-24"}}
+    P._fit_pooled_alpha_for_pool(pool_cfg, city_configs, dev_rows, 1e-4)
     P._select_pooled_margin_for_pool(
-        {"split": {"test_start": "2025-06-24"}}, city_configs, oof_rows, {}, {}, [0.0], 0.07, 1)
+        pool_cfg, city_configs, oof_rows, {}, {}, [0.0], 0.07, 1)
 
     assert alpha_rows_seen == {
         "chi": ["CHI"],

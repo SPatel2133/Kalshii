@@ -32,6 +32,12 @@ def test_decide_uses_exact_fee_adjusted_yes_and_no_boundaries():
     assert backtest.decide([0.7, 0.3], [0, 40], [60, 100], 0.08, 1.0) == original
 
 
+def test_decide_uses_per_contract_fee_for_multi_contract_order():
+    decisions = backtest.decide([0.5], [0], [30], 0.17, 1.0, contracts=3)
+    assert [(decision["side"], decision["price_c"]) for decision in decisions] == [("YES", 30)]
+    assert decisions[0]["edge"] == pytest.approx(0.5 - 0.30 - 5 / 300)
+
+
 def test_decide_flags_crossed_two_sided_opportunity_and_is_label_blind():
     a = backtest.decide([0.5], [70], [30], 0.0, 0.0)
     b = backtest.decide([0.5], [70], [30], 0.0, 0.0)

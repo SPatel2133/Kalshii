@@ -60,9 +60,9 @@ def decide(probs, bids_c, asks_c, margin, fee_mult, rate=0.07, contracts=1):
         if (not 0 <= bid <= 100 or not 0 <= ask <= 100 or
                 not math.isfinite(float(prob)) or not 0 <= float(prob) <= 1):
             raise ValueError("invalid probability or quote")
-        yes_edge = float(prob) - ask / 100 - fee_cents(ask, contracts, rate, fee_mult) / 100
+        yes_edge = float(prob) - ask / 100 - fee_cents(ask, contracts, rate, fee_mult) / (100 * contracts)
         no_price = 100 - bid
-        no_edge = bid / 100 - float(prob) - fee_cents(no_price, contracts, rate, fee_mult) / 100
+        no_edge = bid / 100 - float(prob) - fee_cents(no_price, contracts, rate, fee_mult) / (100 * contracts)
         yes = ask < 100 and yes_edge >= margin - 1e-12
         no = bid > 0 and no_edge >= margin - 1e-12
         if yes and no:

@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import date
 
 import numpy as np
 import pytest
@@ -244,3 +245,100 @@ def test_pooled_test_rejects_changed_cohort_without_overwriting_outputs(tmp_path
         P.pooled_test_stage(pool_cfg, "preregistration")
 
     _assert_pooled_stage_preserves_outputs(output_dir, before)
+
+
+def test_leak_free_pool_limits_global_alpha_and_margin_rows(monkeypatch):
+    label_cutoff = "2025-06-24"
+    dev_rows = {
+        "chi": [
+            {"event_id": "CHI_BEFORE", "event_date": "2025-06-23"},
+        ],
+        "aus": [
+            {"event_id": "AUS_BEFORE", "event_date": "2025-06-23"},
+            {"event_id": "AUS_ON_CUTOFF", "event_date": label_cutoff},
+            {"event_id": "AUS_AFTER", "event_date": "2025-06-25"},
+        ],
+    }
+    oof_rows = [
+        {"event_id": "OOF_BEFORE", "event_date": "2025-06-23"},
+        {"event_id": "OOF_ON_CUTOFF", "event_date": label_cutoff},
+        {"event_id": "OOF_AFTER", "event_date": "2025-06-25"},
+    ]
+    city_configs = {
+        "chi": {"split": {"test_start": label_cutoff}},
+        "aus": {"split": {"test_start": "2025-07-01"}},
+    }
+    pool_cfg = {"leak_free": True, "split": {"test_start": label_cutoff}}
+    alpha_rows_seen = {}
+    margin_rows_seen = {}
+
+    def record_alpha(rows, floor):
+        alpha_rows_seen.update({city: [row["event_id"] for row in values] for city, values in rows.items()})
+        return {"alpha": 1.0}
+
+    def record_margin(rows, features, labels, boundary, margins, fee_rate, contracts):
+        margin_rows_seen.update({
+            "event_ids": [row["event_id"] for row in rows],
+            "boundary": boundary,
+        })
+        return {"selected": {"market_recal_pooled": 0.0}}
+
+    monkeypatch.setattr(P, "fit_pooled_alpha", record_alpha)
+    monkeypatch.setattr(P.B, "select_margin", record_margin)
+
+    P._fit_pooled_alpha_for_pool(pool_cfg, dev_rows, 1e-4)
+    P._select_pooled_margin_for_pool(
+        pool_cfg, city_configs, oof_rows, {}, {}, [0.0], 0.07, 1)
+
+    assert alpha_rows_seen == {
+        "chi": ["CHI_BEFORE"],
+        "aus": ["AUS_BEFORE"],
+    }
+    assert margin_rows_seen == {
+        "event_ids": ["OOF_BEFORE"],
+        "boundary": date.fromisoformat(label_cutoff),
+    }
+
+
+def test_default_pool_includes_rows_after_earliest_city_test_start(monkeypatch):
+    dev_rows = {
+        "chi": [{"event_id": "CHI", "event_date": "2025-06-23"}],
+        "aus": [{"event_id": "AUS", "event_date": "2025-06-25"}],
+    }
+    oof_rows = [
+        {"event_id": "OOF_BEFORE", "event_date": "2025-06-23"},
+        {"event_id": "OOF_AFTER", "event_date": "2025-06-25"},
+    ]
+    city_configs = {
+        "chi": {"split": {"test_start": "2025-06-24"}},
+        "aus": {"split": {"test_start": "2025-07-01"}},
+    }
+    alpha_rows_seen = {}
+    margin_rows_seen = {}
+
+    def record_alpha(rows, floor):
+        alpha_rows_seen.update({city: [row["event_id"] for row in values] for city, values in rows.items()})
+        return {"alpha": 1.0}
+
+    def record_margin(rows, features, labels, boundary, margins, fee_rate, contracts):
+        margin_rows_seen.update({
+            "event_ids": [row["event_id"] for row in rows],
+            "boundary": boundary,
+        })
+        return {"selected": {"market_recal_pooled": 0.0}}
+
+    monkeypatch.setattr(P, "fit_pooled_alpha", record_alpha)
+    monkeypatch.setattr(P.B, "select_margin", record_margin)
+
+    P._fit_pooled_alpha_for_pool({"split": {"test_start": "2025-06-24"}}, dev_rows, 1e-4)
+    P._select_pooled_margin_for_pool(
+        {"split": {"test_start": "2025-06-24"}}, city_configs, oof_rows, {}, {}, [0.0], 0.07, 1)
+
+    assert alpha_rows_seen == {
+        "chi": ["CHI"],
+        "aus": ["AUS"],
+    }
+    assert margin_rows_seen == {
+        "event_ids": ["OOF_BEFORE", "OOF_AFTER"],
+        "boundary": date.fromisoformat("2025-07-01"),
+    }

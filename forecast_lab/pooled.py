@@ -20,7 +20,8 @@ from .util import read_bytes_maybe_gz, read_jsonl, sha256_bytes, write_json, wri
 
 def _pooled_is_exploratory(pool_cfg, city_configs):
     return (any(cfg["cutoff_local"] != "08:00" for cfg in city_configs.values())
-            or pool_cfg.get("exploratory", False))
+            or pool_cfg.get("exploratory", False)
+            or pool_cfg.get("leak_free", False))
 
 
 def fit_pooled_alpha(dev_rows, floor):
@@ -29,6 +30,37 @@ def fit_pooled_alpha(dev_rows, floor):
         raise ValueError("pooled alpha requires at least one development row")
     return M.fit_recal_scalar([row["mids"] for row in rows],
                               [row["winner_index"] for row in rows], floor)
+
+
+def _pool_label_cutoff(pool_cfg):
+    if pool_cfg.get("leak_free", False):
+        return date.fromisoformat(pool_cfg["split"]["test_start"])
+    return None
+
+
+def _rows_before_label_cutoff(rows, label_cutoff):
+    if label_cutoff is None:
+        return rows
+    return [row for row in rows if date.fromisoformat(row["event_date"]) < label_cutoff]
+
+
+def _fit_pooled_alpha_for_pool(pool_cfg, dev_rows, floor):
+    label_cutoff = _pool_label_cutoff(pool_cfg)
+    fit_rows = dev_rows if label_cutoff is None else {
+        city: _rows_before_label_cutoff(rows, label_cutoff)
+        for city, rows in dev_rows.items()
+    }
+    return fit_pooled_alpha(fit_rows, floor)
+
+
+def _select_pooled_margin_for_pool(pool_cfg, city_configs, oof_rows, features, labels,
+                                   margins, fee_rate, contracts):
+    label_cutoff = _pool_label_cutoff(pool_cfg)
+    boundary = (label_cutoff if label_cutoff is not None else
+                max(date.fromisoformat(cfg["split"]["test_start"])
+                    for cfg in city_configs.values()))
+    margin_rows = _rows_before_label_cutoff(oof_rows, label_cutoff)
+    return B.select_margin(margin_rows, features, labels, boundary, margins, fee_rate, contracts)
 
 
 def pooled_recalibrate_predictions(predictions, alpha, floor):
@@ -361,7 +393,7 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
     floors = {cfg["models"]["prob_floor"] for cfg in city_configs.values()}
     if len(floors) != 1:
         raise ValueError("pooled cities must use a common probability floor")
-    pooled_alpha_fit = fit_pooled_alpha(dev_rows, floors.pop())
+    pooled_alpha_fit = _fit_pooled_alpha_for_pool(pool_cfg, dev_rows, floors.pop())
     pooled_alpha = pooled_alpha_fit["alpha"]
     for city, cfg in city_configs.items():
         state = json.loads((models_dir(cfg) /
@@ -382,11 +414,9 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
                     raise ValueError(f"duplicate event id across pooled cities: {event_id}")
                 target[event_id] = row
 
-    pooled_boundary_guard = max(date.fromisoformat(cfg["split"]["test_start"])
-                                for cfg in city_configs.values())
     first_cfg = next(iter(city_configs.values()))
-    margin_fit = B.select_margin(
-        combined_oof, combined_features, combined_labels, pooled_boundary_guard,
+    margin_fit = _select_pooled_margin_for_pool(
+        pool_cfg, city_configs, combined_oof, combined_features, combined_labels,
         first_cfg["backtest"]["margins"], first_cfg["backtest"]["fee_rate"],
         first_cfg["backtest"]["contracts"])
     pooled_margin = margin_fit["selected"]["market_recal_pooled"]
@@ -418,6 +448,13 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
             for city, cfg in city_configs.items()
         },
     }
+    label_cutoff = _pool_label_cutoff(pool_cfg)
+    if label_cutoff is not None:
+        state.update({
+            "leak_free": True,
+            "label_cutoff": label_cutoff.isoformat(),
+            "exploratory": _pooled_is_exploratory(pool_cfg, city_configs),
+        })
     write_json(output_dir / "pooled_state.json", state)
     state["pooled_state_sha256"] = sha256_bytes((output_dir / "pooled_state.json").read_bytes())
     print(json.dumps({
@@ -799,6 +836,11 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
         "pooled_pnl": pooled_pnl,
         "cities": {city: result["public_summary"] for city, result in city_results.items()},
     }
+    if frozen.get("leak_free"):
+        output_summary.update({
+            "leak_free": True,
+            "label_cutoff": frozen["label_cutoff"],
+        })
     write_json(output_dir / "summary.json", output_summary)
     write_jsonl(output_dir / "trades.jsonl", pooled_trades)
     print(json.dumps({

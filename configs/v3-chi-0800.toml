@@ -1,0 +1,81 @@
+# V3 city profile; split dates are preregistered.
+experiment_id = "v3-chi-0800"
+feature_version = "feat-v3"
+series = "KXHIGHCHI"
+timezone = "America/Chicago"
+cutoff_local = "08:00"
+regime = "NWS"
+station_phrase = "Chicago Midway"
+
+[paths]
+cache_dir = "data/cache"
+work_dir = "data/work-v3-chi"
+evidence_dir = "evidence/v3/chi-0800"
+
+[sources]
+kalshi_base = "https://api.elections.kalshi.com/trade-api/v2"
+iem_mos = "https://mesonet.agron.iastate.edu/cgi-bin/request/mos.py"
+iem_text = "https://mesonet.agron.iastate.edu/api/1/nwstext"
+iem_afos_list = "https://mesonet.agron.iastate.edu/api/1/nws/afos/list.json"
+iem_asos = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
+asos_station = "MDW"
+mos_station = "KMDW"
+mos_model = "GFS"
+
+[http]
+timeout_s = 30
+max_retries = 5
+backoff_s = 1.5
+min_interval_s = 0.25
+
+[quotes]
+candle_period_min = 60
+max_quote_age_h = 24.0
+history_window_h = 6.0
+empty_book = "exclude"
+
+[weather]
+lag_h = 7.5
+lag_strict_h = 11.0
+features = ["nx", "sampled_minus_nx", "obs_max_minus_nx", "obs_latest_minus_nx"]
+obs_latency_min = 10
+day_window = "lst"
+
+[support]
+lo_f = 0
+hi_f = 120
+
+[split]
+dev_start = "2025-03-05"
+test_start = "2026-02-10"
+test_end = "2026-08-13"
+min_train_events = 60
+refit_every_days = 0
+
+[download]
+start = "2025-03-05"
+end = "2026-08-13"
+
+[models]
+prob_floor = 1e-4
+seed = 20260813
+blend_folds = 5
+lambda_grid = [1.0, 10.0, 100.0, 1000.0, 10000.0]
+gate_l2_grid = [0.01, 0.1, 1.0, 10.0]
+recal_l2 = 1.0
+
+[evaluation]
+primary = ["adaptive_blend", "fixed_blend"]
+secondary = [["adaptive_blend", "market_raw"], ["adaptive_blend", "market_recal"], ["fixed_blend", "market_raw"]]
+effect_threshold = 0.02
+block_days = 7
+block_sensitivity = [3, 14]
+bootstrap_reps = 2000
+
+[backtest]
+fee_rate = 0.07
+fee_multiplier = 1.0
+margins = [0.0, 0.02, 0.05, 0.10]
+fee_sensitivity = [0.0, 1.0, 2.0]
+slippage_cents = 1
+contracts = 1

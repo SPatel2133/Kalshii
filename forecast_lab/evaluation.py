@@ -268,7 +268,7 @@ def chronological_blocks(ids, feats, k):
 def fit(cfg, feats, labels, boundary=None, log=print):
     sp = cfg["split"]
     boundary = boundary or date.fromisoformat(sp["test_start"])
-    bdt = cutoff_utc(boundary, cfg["cutoff_local"])
+    bdt = cutoff_utc(boundary, cfg["cutoff_local"], cfg.get("timezone", "America/New_York"))
     dev_ids = trainable(feats, labels, date.fromisoformat(sp["dev_start"]), boundary, bdt)
     excluded_late = [e for e, r in feats.items() if date.fromisoformat(sp["dev_start"]) <= d_of(r) < boundary
                      and not r.get("reasons") and r.get("regime") == "NWS" and labels.get(e)
@@ -280,7 +280,7 @@ def fit(cfg, feats, labels, boundary=None, log=print):
     oof = []
     for k in range(1, K):
         first = feats[blocks[k][0]]["event_date"]
-        fb = cutoff_utc(date.fromisoformat(first), cfg["cutoff_local"])
+        fb = cutoff_utc(date.fromisoformat(first), cfg["cutoff_local"], cfg.get("timezone", "America/New_York"))
         tr = [e for e in sum(blocks[:k], []) if label_ok(labels[e], fb)]
         st = fit_upstream(cfg, feats, labels, tr)
         for e in blocks[k]:
@@ -382,6 +382,51 @@ def fit(cfg, feats, labels, boundary=None, log=print):
     return state, oof
 
 
+def oof_prediction_rows(state, oof):
+    families = ("market_raw", "market_recal", "weather", "coherent", "fixed_blend", "adaptive_blend")
+    out = []
+    for item in oof:
+        row, up = item["row"], item["up"]
+        A = up["_A"]
+        preds = {}
+        for family in families[:4]:
+            source = up.get(family)
+            preds[family] = ({"mode": "model", "buckets": source["buckets"]} if source else
+                             {"mode": "unavailable", "buckets": None})
+        for family, gate_state, market_key in (
+                ("fixed_blend", None, "coherent"), ("adaptive_blend", state["gate"], "coherent")):
+            has_market, has_weather = market_key in up, "weather" in up
+            if has_market and has_weather:
+                if family == "fixed_blend":
+                    market_weight = state["fixed_blend"]["w"]
+                else:
+                    market_weight = M.gate_value(gate_state, gate_features(row, up, market_key))
+                support = (market_weight * up[market_key]["support"] +
+                           (1 - market_weight) * up["weather"]["support"])
+                preds[family] = {"mode": "model", "buckets": A @ support}
+            elif has_market:
+                preds[family] = {"mode": "source_only:market", "buckets": up[market_key]["buckets"]}
+            elif has_weather:
+                preds[family] = {"mode": "source_only:weather", "buckets": up["weather"]["buckets"]}
+            else:
+                preds[family] = {"mode": "unavailable", "buckets": None}
+        for family in families:
+            pred = preds[family]
+            record = {
+                "event_id": row["event_id"],
+                "event_date": row["event_date"],
+                "family": family,
+                "fold": item["fold"],
+                "mode": pred["mode"],
+                "bucket_ids": [b["bucket_id"] for b in row["buckets"]],
+            }
+            if pred["buckets"] is not None:
+                probabilities = M.validate_probs(pred["buckets"], family)
+                record["probabilities"] = [round(float(p), 12) for p in probabilities]
+            out.append(record)
+    return out
+
+
 def model_id(state, family):
     return f"{state['experiment_id']}.{family}@{state['fit_boundary']}"
 
@@ -430,6 +475,29 @@ def block_bootstrap(dates, deltas, block_days, reps, seed, start, end):
         idx = np.concatenate(idx)
         means[i] = deltas[idx].mean() if idx.size else np.nan
     return float(np.nanpercentile(means, 2.5)), float(np.nanpercentile(means, 97.5))
+
+
+def calendar_block_indices(dates, block_days, reps, seed, start, end):
+    """Return moving-block event indices; all events on a date share each sampled block."""
+    rng = np.random.default_rng(seed)
+    days = np.array([(d - start).days for d in dates])
+    n_days = (end - start).days + 1
+    n_blocks = math.ceil(n_days / block_days)
+    samples = []
+    for _ in range(reps):
+        starts = rng.integers(0, n_days, size=n_blocks)
+        indices = []
+        for block_start in starts:
+            selected = (days - block_start) % n_days < block_days
+            indices.append(np.nonzero(selected)[0])
+        samples.append(np.concatenate(indices))
+    return samples
+
+
+def block_bootstrap_means(dates, deltas, block_days, reps, seed, start, end):
+    deltas = np.asarray(deltas, float)
+    return np.asarray([deltas[idx].mean() if idx.size else np.nan for idx in
+                       calendar_block_indices(dates, block_days, reps, seed, start, end)])
 
 
 def evaluate_rows(cfg, state, feats, labels, ids):

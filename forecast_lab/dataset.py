@@ -67,8 +67,10 @@ def build_event(src, event_id, local_hhmm=None, lag_h=None, scenario=None, drop_
     local_hhmm = local_hhmm or cfg["cutoff_local"]
     markets = src.events.get(event_id, [])
     d = contracts.event_date_from_ticker(event_id)
-    cut = replay.cutoff_utc(d, local_hhmm)
-    rules, label = contracts.normalize_event(event_id, markets, cut)
+    timezone_name = cfg.get("timezone", "America/New_York")
+    day_window = cfg["weather"].get("day_window")
+    cut = replay.cutoff_utc(d, local_hhmm, timezone_name)
+    rules, label = contracts.normalize_event(event_id, markets, cut, station_phrase=cfg.get("station_phrase"))
     prov = {"candles": {}, "fetch_failures": []}
     candles = {}
     for b in rules.get("buckets", []):
@@ -92,19 +94,25 @@ def build_event(src, event_id, local_hhmm=None, lag_h=None, scenario=None, drop_
                         "failure_class": m.get("failure_class")} for m in metas]
     features = cfg["weather"].get("features", ["nx"])
     local_day = "sampled_minus_nx" in features
-    wrec = weather.select_forecast(runs, d, cut, lag_h + weather_delay_h, local_day=local_day)
+    station = cfg["sources"]["mos_station"] if "station_phrase" in cfg else None
+    wrec = weather.select_forecast(runs, d, cut, lag_h + weather_delay_h, local_day=local_day,
+                                   day_window=day_window, tz=timezone_name, station=station)
     row = replay.build_snapshot(rules, candles, wrec, cut, cfg["quotes"], exploratory=(local_hhmm != cfg["cutoff_local"]),
                                 scenario=scenario, feature_version=cfg.get("feature_version", FEATURE_VERSION))
+    if day_window is not None:
+        row["weather"]["day_window"] = day_window
     if "sampled_minus_nx" in features:
         selected = row["weather"]["selected"]
         if selected is None or selected.get("sampled_max_local_f") is None:
             row["flags"] = sorted(set(row["flags"] + [R.FORECAST_SAMPLED_MISSING]))
     if any(name in features for name in ("obs_max_minus_nx", "obs_latest_minus_nx")):
-        obs = weather.observation_summary(src.asos(d.year), d, cut, cfg["weather"].get("obs_latency_min", 10))
+        obs = weather.observation_summary(src.asos(d.year), d, cut, cfg["weather"].get("obs_latency_min", 10),
+                                          tz=timezone_name, day_window=day_window)
         row["weather"]["obs"] = obs
         if obs["n_obs"] == 0:
             row["flags"] = sorted(set(row["flags"] + [R.OBS_UNAVAILABLE]))
-    if "sampled_minus_nx" in features or any(name in features for name in ("obs_max_minus_nx", "obs_latest_minus_nx")):
+    if day_window is not None or "sampled_minus_nx" in features or any(
+            name in features for name in ("obs_max_minus_nx", "obs_latest_minus_nx")):
         row["fingerprint"] = replay.snapshot_fingerprint(row)
     if prov["fetch_failures"]:
         row["flags"] = sorted(set(row["flags"] + [R.FETCH_FAILED]))

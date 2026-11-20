@@ -7,3 +7,4 @@ data/
 data
 *.egg-info/
 evidence/**/records/
+evidence/v3/**/*.jsonl

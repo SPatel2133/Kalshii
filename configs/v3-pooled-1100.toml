@@ -1,0 +1,22 @@
+# EXPLORATORY (pre-registration §6)
+city_configs = [
+  "configs/v3-chi-1100.toml",
+  "configs/v3-mia-1100.toml",
+  "configs/v3-aus-1100.toml",
+  "configs/v3-lax-1100.toml",
+  "configs/v3-phil-1100.toml",
+]
+
+output_dir = "evidence/v3/pooled-1100"
+
+[split]
+test_start = "2025-06-24"
+test_end = "2026-08-13"
+
+[pool]
+block_days = 7
+block_sensitivity = [3, 14]
+bootstrap_reps = 2000
+seed = 20260813
+h1_threshold = 0.01
+report_threshold = 0.02

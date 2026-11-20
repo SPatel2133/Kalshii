@@ -1,0 +1,337 @@
+{
+  "common_cohort_ids_sha256": "939681d1e557f8a930b4c5df52b99f172a7e974649c5a04bce18185cc20eb196",
+  "common_cohort_n": 287,
+  "comparisons": {
+    "adaptive_blend-fixed_blend": {
+      "a_wins": 54,
+      "b_wins": 233,
+      "block_days": 7,
+      "ci95_block": [
+        -7.616614866354123e-09,
+        1.4442188974925433e-08
+      ],
+      "decision": "no supported difference",
+      "effect_threshold": 0.02,
+      "mean_delta": 4.548990371743653e-09,
+      "mean_delta_brier": -3.084312954175496e-10,
+      "metric": "mean log loss (a - b); negative favours a",
+      "n": 287,
+      "sensitivity": {
+        "14": [
+          -6.386488088832031e-09,
+          1.3878383492938763e-08
+        ],
+        "3": [
+          -8.655978688073144e-09,
+          1.517420111624711e-08
+        ]
+      }
+    },
+    "adaptive_blend-market_raw": {
+      "a_wins": 160,
+      "b_wins": 127,
+      "block_days": 7,
+      "ci95_block": [
+        -0.007055842826800639,
+        0.006995059263542594
+      ],
+      "decision": "no supported difference",
+      "effect_threshold": 0.02,
+      "mean_delta": -0.0013278048641399368,
+      "mean_delta_brier": 0.0007390715550430214,
+      "metric": "mean log loss (a - b); negative favours a",
+      "n": 287,
+      "sensitivity": {
+        "14": [
+          -0.006792761693373649,
+          0.006837559192050763
+        ],
+        "3": [
+          -0.007231413712805887,
+          0.007036755840053914
+        ]
+      }
+    },
+    "adaptive_blend-market_recal": {
+      "a_wins": 55,
+      "b_wins": 232,
+      "block_days": 7,
+      "ci95_block": [
+        -0.022260145833494987,
+        0.022660927671883265
+      ],
+      "decision": "no supported difference",
+      "effect_threshold": 0.02,
+      "mean_delta": 0.0006336678297859471,
+      "mean_delta_brier": -0.0024929569385599075,
+      "metric": "mean log loss (a - b); negative favours a",
+      "n": 287,
+      "sensitivity": {
+        "14": [
+          -0.02256103348620498,
+          0.023920808890499398
+        ],
+        "3": [
+          -0.024666729868726544,
+          0.02418071019966917
+        ]
+      }
+    },
+    "fixed_blend-market_raw": {
+      "a_wins": 132,
+      "b_wins": 34,
+      "block_days": 7,
+      "ci95_block": [
+        -0.0070558595911021675,
+        0.006995066238642473
+      ],
+      "decision": "no supported difference",
+      "effect_threshold": 0.02,
+      "mean_delta": -0.0013278094131303091,
+      "mean_delta_brier": 0.0007390718634743173,
+      "metric": "mean log loss (a - b); negative favours a",
+      "n": 287,
+      "sensitivity": {
+        "14": [
+          -0.0067927725382552415,
+          0.006837563725868362
+        ],
+        "3": [
+          -0.007231425869122777,
+          0.007036754869680969
+        ]
+      }
+    }
+  },
+  "config_sha256": "74fd0a6aedcb75f4cbd7740028515eaf2a24aa101354319d71e29aeb378bb104",
+  "coverage_modes_all_scored_events": {
+    "adaptive_blend": {
+      "model": 287
+    },
+    "adaptive_blend_raw": {
+      "model": 287
+    },
+    "adaptive_corrected": {
+      "model": 287
+    },
+    "climatology": {
+      "model": 287
+    },
+    "coherent": {
+      "model": 287
+    },
+    "fixed_blend": {
+      "model": 287
+    },
+    "market_context": {
+      "model": 287
+    },
+    "market_raw": {
+      "model": 287
+    },
+    "market_recal": {
+      "model": 287
+    },
+    "weather": {
+      "model": 287
+    }
+  },
+  "families": {
+    "adaptive_blend": {
+      "mean_brier": 0.31851314037759787,
+      "mean_log_loss": 0.5497953532767373,
+      "mean_p_winner": 0.6691165644449963,
+      "n": 287
+    },
+    "adaptive_blend_raw": {
+      "mean_brier": 0.3177740689299485,
+      "mean_log_loss": 0.5511231672347983,
+      "mean_p_winner": 0.6642366014817084,
+      "n": 287
+    },
+    "adaptive_corrected": {
+      "mean_brier": 0.3328182697822015,
+      "mean_log_loss": 0.5895849747409911,
+      "mean_p_winner": 0.7065636147545519,
+      "n": 287
+    },
+    "climatology": {
+      "mean_brier": 1.2351219315226414,
+      "mean_log_loss": 2.710918554042056,
+      "mean_p_winner": 0.10600821165066328,
+      "n": 287
+    },
+    "coherent": {
+      "mean_brier": 0.3185131406860293,
+      "mean_log_loss": 0.5497953487277469,
+      "mean_p_winner": 0.6691165795168419,
+      "n": 287
+    },
+    "fixed_blend": {
+      "mean_brier": 0.3185131406860293,
+      "mean_log_loss": 0.5497953487277469,
+      "mean_p_winner": 0.6691165795168419,
+      "n": 287
+    },
+    "market_context": {
+      "mean_brier": 0.31805918639096303,
+      "mean_log_loss": 0.5430423072946653,
+      "mean_p_winner": 0.6909557296079223,
+      "n": 287
+    },
+    "market_raw": {
+      "mean_brier": 0.3177740688225549,
+      "mean_log_loss": 0.5511231581408772,
+      "mean_p_winner": 0.6642366186300713,
+      "n": 287
+    },
+    "market_recal": {
+      "mean_brier": 0.3210060973161578,
+      "mean_log_loss": 0.5491616854469514,
+      "mean_p_winner": 0.7078259374080006,
+      "n": 287
+    },
+    "weather": {
+      "mean_brier": 0.623360665690381,
+      "mean_log_loss": 1.1350391183717217,
+      "mean_p_winner": 0.3736623957566368,
+      "n": 287
+    }
+  },
+  "funnel": {
+    "candidate_dates": 287,
+    "catalogue": 287,
+    "label_valid": 287,
+    "quote_complete": 287,
+    "reasons": {},
+    "rules_valid": 287,
+    "weather_available": 287
+  },
+  "model_ids": [
+    "v3-nyc-1400.adaptive_blend@2025-10-01",
+    "v3-nyc-1400.adaptive_blend_raw@2025-10-01",
+    "v3-nyc-1400.adaptive_corrected@2025-10-01",
+    "v3-nyc-1400.climatology@2025-10-01",
+    "v3-nyc-1400.coherent@2025-10-01",
+    "v3-nyc-1400.fixed_blend@2025-10-01",
+    "v3-nyc-1400.market_context@2025-10-01",
+    "v3-nyc-1400.market_raw@2025-10-01",
+    "v3-nyc-1400.market_recal@2025-10-01",
+    "v3-nyc-1400.weather@2025-10-01"
+  ],
+  "n_events_scored_any": 287,
+  "predictions_sha256_sealed_before_scoring": "49b94e6c7dd4a0f39209e716ab479f41e74e85ba16fd79911f6db554f93ef64e",
+  "split": "test",
+  "state_sha256": "869e9797b34cde2d938823a5740ebba9215e2cf0a07d8786114fca4a20de2af6",
+  "strict_lag_sensitivity": {
+    "common_cohort_n": 287,
+    "comparisons": {
+      "adaptive_blend-fixed_blend": {
+        "a_wins": 54,
+        "b_wins": 233,
+        "block_days": 7,
+        "ci95_block": [
+          -7.616614866354123e-09,
+          1.4442188974925433e-08
+        ],
+        "decision": "no supported difference",
+        "effect_threshold": 0.02,
+        "mean_delta": 4.548990371743653e-09,
+        "mean_delta_brier": -3.084312954175496e-10,
+        "metric": "mean log loss (a - b); negative favours a",
+        "n": 287,
+        "sensitivity": {
+          "14": [
+            -6.386488088832031e-09,
+            1.3878383492938763e-08
+          ],
+          "3": [
+            -8.655978688073144e-09,
+            1.517420111624711e-08
+          ]
+        }
+      },
+      "adaptive_blend-market_raw": {
+        "a_wins": 160,
+        "b_wins": 127,
+        "block_days": 7,
+        "ci95_block": [
+          -0.007055842826800639,
+          0.006995059263542594
+        ],
+        "decision": "no supported difference",
+        "effect_threshold": 0.02,
+        "mean_delta": -0.0013278048641399368,
+        "mean_delta_brier": 0.0007390715550430214,
+        "metric": "mean log loss (a - b); negative favours a",
+        "n": 287,
+        "sensitivity": {
+          "14": [
+            -0.006792761693373649,
+            0.006837559192050763
+          ],
+          "3": [
+            -0.007231413712805887,
+            0.007036755840053914
+          ]
+        }
+      },
+      "adaptive_blend-market_recal": {
+        "a_wins": 55,
+        "b_wins": 232,
+        "block_days": 7,
+        "ci95_block": [
+          -0.022260145833494987,
+          0.022660927671883265
+        ],
+        "decision": "no supported difference",
+        "effect_threshold": 0.02,
+        "mean_delta": 0.0006336678297859471,
+        "mean_delta_brier": -0.0024929569385599075,
+        "metric": "mean log loss (a - b); negative favours a",
+        "n": 287,
+        "sensitivity": {
+          "14": [
+            -0.02256103348620498,
+            0.023920808890499398
+          ],
+          "3": [
+            -0.024666729868726544,
+            0.02418071019966917
+          ]
+        }
+      },
+      "fixed_blend-market_raw": {
+        "a_wins": 132,
+        "b_wins": 34,
+        "block_days": 7,
+        "ci95_block": [
+          -0.0070558595911021675,
+          0.006995066238642473
+        ],
+        "decision": "no supported difference",
+        "effect_threshold": 0.02,
+        "mean_delta": -0.0013278094131303091,
+        "mean_delta_brier": 0.0007390718634743173,
+        "metric": "mean log loss (a - b); negative favours a",
+        "n": 287,
+        "sensitivity": {
+          "14": [
+            -0.0067927725382552415,
+            0.006837563725868362
+          ],
+          "3": [
+            -0.007231425869122777,
+            0.007036754869680969
+          ]
+        }
+      }
+    },
+    "lag_h": 11.0,
+    "weather_selection_changed": 0
+  },
+  "window": [
+    "2025-10-01",
+    "2026-07-14"
+  ]
+}

@@ -509,6 +509,44 @@ def verify_pooled_test_seals(pool_cfg, preregistration_sha):
     return input_prediction_shas
 
 
+def _verify_existing_pooled_outputs(output_dir, pooled_predictions, city_cohorts):
+    manifest_path = output_dir / "predictions_manifest.json"
+    if manifest_path.is_file():
+        predictions_path = output_dir / "predictions.jsonl"
+        manifest = json.loads(manifest_path.read_text())
+        existing_bytes = read_bytes_maybe_gz(predictions_path)
+        if sha256_bytes(existing_bytes) != manifest.get("predictions_sha256"):
+            raise ValueError("existing pooled predictions do not match their seal")
+        existing_predictions = read_jsonl(predictions_path)
+        existing_event_ids = [row["event_id"] for row in existing_predictions]
+        if (len(existing_event_ids) != len(set(existing_event_ids))
+                or manifest.get("n_predictions") != len(existing_event_ids)
+                or set(existing_event_ids) != {row["event_id"] for row in pooled_predictions}):
+            raise ValueError("rebuilt pooled prediction event set differs from the existing seal")
+
+    summary_path = output_dir / "summary.json"
+    if summary_path.is_file():
+        summary = json.loads(summary_path.read_text())
+        rebuilt_ids = {event_id for cohort in city_cohorts.values() for event_id in cohort}
+        rebuilt_hash = sha256_bytes("\n".join(sorted(rebuilt_ids)).encode())
+        if ("common_cohort_ids_sha256" in summary
+                and (summary.get("common_cohort_n") != len(rebuilt_ids)
+                     or summary["common_cohort_ids_sha256"] != rebuilt_hash)):
+            raise ValueError("rebuilt pooled cohort differs from the event set in the existing seal")
+
+        city_summaries = summary.get("cities", {})
+        if isinstance(city_summaries, dict) and city_summaries:
+            if set(city_summaries) != set(city_cohorts):
+                raise ValueError("rebuilt pooled cohort cities differ from the existing seal")
+            for city, cohort in city_cohorts.items():
+                city_summary = city_summaries[city]
+                cohort_hash = sha256_bytes("\n".join(cohort).encode())
+                if ("common_cohort_ids_sha256" in city_summary
+                        and (city_summary.get("common_cohort_n") != len(cohort)
+                             or city_summary["common_cohort_ids_sha256"] != cohort_hash)):
+                    raise ValueError(f"rebuilt {city} cohort differs from the event set in the existing seal")
+
+
 def pooled_test_stage(pool_cfg, preregistration_sha):
     output_dir, frozen, city_configs, city_inputs, input_prediction_shas = _load_pooled_test_inputs(
         pool_cfg, preregistration_sha)
@@ -535,6 +573,37 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
             raise ValueError(f"duplicate pooled prediction event id: {event_id}")
         seen.add(event_id)
     pooled_predictions.sort(key=lambda row: (row["event_date"], row["event_id"]))
+
+    city_preflight, city_cohorts = {}, {}
+    for city, city_input in city_inputs.items():
+        cfg = city_input["cfg"]
+        features = city_input["features"]
+        label_path = Path(cfg["paths"]["work_dir"]) / "dataset" / "labels.jsonl"
+        labels = {row["event_id"]: row for row in read_jsonl(label_path)}
+        predictions = city_input["predictions"] + [
+            row for row in pooled_predictions if row["city"] == city
+        ]
+        start = date.fromisoformat(cfg["split"]["test_start"])
+        end = date.fromisoformat(cfg["split"]["test_end"])
+        cohort, by_event = B._common_events(predictions, features, start, end)
+        cohort = [event_id for event_id in cohort
+                  if labels.get(event_id) and labels[event_id].get("winner_bucket") is not None
+                  and not labels[event_id].get("reasons")]
+        if not cohort:
+            raise ValueError(f"{city} has no test common cohort")
+        B.check_prediction_snapshots(features, by_event, cohort)
+        city_cohorts[city] = cohort
+        city_preflight[city] = {
+            "cfg": cfg,
+            "features": features,
+            "labels": labels,
+            "predictions": predictions,
+            "start": start,
+            "end": end,
+        }
+
+    _verify_existing_pooled_outputs(output_dir, pooled_predictions, city_cohorts)
+
     predictions_path = output_dir / "predictions.jsonl"
     write_jsonl(predictions_path, pooled_predictions)
     pooled_predictions_sha = sha256_bytes(read_bytes_maybe_gz(predictions_path))
@@ -548,17 +617,14 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
     write_json(output_dir / "predictions_manifest.json", prediction_manifest)
 
     city_results, pooled_trades = {}, []
-    for city, city_input in city_inputs.items():
-        cfg = city_input["cfg"]
-        label_path = Path(cfg["paths"]["work_dir"]) / "dataset" / "labels.jsonl"
-        labels = {row["event_id"]: row for row in read_jsonl(label_path)}
-        features = city_input["features"]
-        pooled_rows = [row for row in pooled_predictions if row["city"] == city]
-        predictions = city_input["predictions"] + pooled_rows
+    for city, prepared in city_preflight.items():
+        cfg = prepared["cfg"]
+        labels = prepared["labels"]
+        features = prepared["features"]
+        predictions = prepared["predictions"]
         margins = dict(frozen["city_margins"][city])
         margins["market_recal_pooled"] = frozen["pooled_margin"]
-        start = date.fromisoformat(cfg["split"]["test_start"])
-        end = date.fromisoformat(cfg["split"]["test_end"])
+        start, end = prepared["start"], prepared["end"]
         city_summary, trades = B.run_backtest(
             cfg, predictions, features, labels, start, end, margins, "test", include_event_pnl=True)
         common_ids = city_summary["common_cohort_ids"]

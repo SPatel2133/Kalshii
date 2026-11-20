@@ -136,6 +136,20 @@ def _common_events(predictions, features, start, end):
     return sorted(common, key=lambda e: (features[e]["event_date"], e)), by_event
 
 
+def check_prediction_snapshots(features, by_event, cohort):
+    for event_id in cohort:
+        feature = features[event_id]
+        expected = {
+            "replay_fingerprint": feature.get("fingerprint"),
+            "cutoff_utc": feature.get("cutoff_utc"),
+            "bucket_ids": [bucket["bucket_id"] for bucket in feature["buckets"]],
+        }
+        for prediction in by_event[event_id].values():
+            if any(field in prediction and prediction[field] != value
+                   for field, value in expected.items()):
+                raise ValueError(f"predictions were sealed against a different snapshot: {event_id}")
+
+
 def _metrics(event_rows, traded_rows, dropped, block_days, sensitivity, reps, seed, start, end):
     event_rows = sorted(event_rows, key=lambda r: (r["date"], r["event_id"]))
     pnl_values = [r["pnl"] for r in event_rows]
@@ -179,17 +193,7 @@ def run_backtest(cfg, predictions, features, labels, start, end, margins, split,
               and not labels[event_id].get("reasons")]
     if not cohort:
         raise ValueError("backtest requires a nonempty five-family common cohort")
-    for event_id in cohort:
-        feature = features[event_id]
-        expected = {
-            "replay_fingerprint": feature.get("fingerprint"),
-            "cutoff_utc": feature.get("cutoff_utc"),
-            "bucket_ids": [bucket["bucket_id"] for bucket in feature["buckets"]],
-        }
-        for prediction in by_event[event_id].values():
-            if any(field in prediction and prediction[field] != value
-                   for field, value in expected.items()):
-                raise ValueError(f"predictions were sealed against a different snapshot: {event_id}")
+    check_prediction_snapshots(features, by_event, cohort)
     strategies = list(STRATEGIES)
     if any("market_recal_pooled" in families for families in by_event.values()):
         strategies.append("market_recal_pooled")

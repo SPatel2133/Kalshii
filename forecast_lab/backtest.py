@@ -60,9 +60,9 @@ def decide(probs, bids_c, asks_c, margin, fee_mult, rate=0.07, contracts=1):
         if (not 0 <= bid <= 100 or not 0 <= ask <= 100 or
                 not math.isfinite(float(prob)) or not 0 <= float(prob) <= 1):
             raise ValueError("invalid probability or quote")
-        yes_edge = float(prob) - ask / 100 - fee_cents(ask, contracts, rate, fee_mult) / 100
+        yes_edge = float(prob) - ask / 100 - fee_cents(ask, contracts, rate, fee_mult) / (100 * contracts)
         no_price = 100 - bid
-        no_edge = bid / 100 - float(prob) - fee_cents(no_price, contracts, rate, fee_mult) / 100
+        no_edge = bid / 100 - float(prob) - fee_cents(no_price, contracts, rate, fee_mult) / (100 * contracts)
         yes = ask < 100 and yes_edge >= margin - 1e-12
         no = bid > 0 and no_edge >= margin - 1e-12
         if yes and no:
@@ -136,6 +136,20 @@ def _common_events(predictions, features, start, end):
     return sorted(common, key=lambda e: (features[e]["event_date"], e)), by_event
 
 
+def check_prediction_snapshots(features, by_event, cohort):
+    for event_id in cohort:
+        feature = features[event_id]
+        expected = {
+            "replay_fingerprint": feature.get("fingerprint"),
+            "cutoff_utc": feature.get("cutoff_utc"),
+            "bucket_ids": [bucket["bucket_id"] for bucket in feature["buckets"]],
+        }
+        for prediction in by_event[event_id].values():
+            if any(field in prediction and prediction[field] != value
+                   for field, value in expected.items()):
+                raise ValueError(f"predictions were sealed against a different snapshot: {event_id}")
+
+
 def _metrics(event_rows, traded_rows, dropped, block_days, sensitivity, reps, seed, start, end):
     event_rows = sorted(event_rows, key=lambda r: (r["date"], r["event_id"]))
     pnl_values = [r["pnl"] for r in event_rows]
@@ -179,6 +193,7 @@ def run_backtest(cfg, predictions, features, labels, start, end, margins, split,
               and not labels[event_id].get("reasons")]
     if not cohort:
         raise ValueError("backtest requires a nonempty five-family common cohort")
+    check_prediction_snapshots(features, by_event, cohort)
     strategies = list(STRATEGIES)
     if any("market_recal_pooled" in families for families in by_event.values()):
         strategies.append("market_recal_pooled")

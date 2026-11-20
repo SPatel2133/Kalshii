@@ -34,19 +34,19 @@ P(high ≥ <input id="tlo" size="3"> °F and ≤ <input id="thi" size="3"> °F) 
 <fieldset><legend>Provenance</legend><div id="prov"></div><details><summary>raw replay response</summary><pre id="raw"></pre></details></fieldset>
 </div>
 <script>
-const $=id=>document.getElementById(id);let cur=null,curq=null,evs=[],golden=null;
+const $=id=>document.getElementById(id);let cur=null,curq=null,evs=[],golden=null,cutoff='08:00';
 const pct=x=>x==null?'—':(100*x).toFixed(1)+'%';const f2=x=>x==null?'—':(+x).toFixed(2);
 const rng=b=>b.lo==null?`≤ ${b.hi}`:b.hi==null?`≥ ${b.lo}`:`${b.lo}–${b.hi}`;
 async function j(u){const r=await fetch(u);const d=await r.json();if(!r.ok)throw new Error(d.error||r.status);return d}
 function bar(p,c){return `<span class="bar ${c||''}" style="width:${Math.round(120*(p||0))}px"></span>`}
-async function init(){const d=await j('/api/events');evs=d.events;golden=d.golden;$('model').textContent='model '+d.model_id;
+async function init(){const d=await j('/api/events');evs=d.events;golden=d.golden;cutoff=d.cutoff||'08:00';$('model').textContent='model '+d.model_id;
  $('ev').innerHTML=evs.map(e=>`<option value="${e.event_id}">${e.event_date} ${e.event_id} [${e.split}]</option>`).join('');
- $('ev').value=golden;$('date').value=evs.find(e=>e.event_id==golden).event_date;
+ $('ev').value=golden;$('date').value=evs.find(e=>e.event_id==golden).event_date;$('asof').value=cutoff;
  const s=await j('/api/showcase');if(s.available)$('show').innerHTML=`Held-out test examples vs ${s.comparator}: <a href="#" data-e="${s.favourable}">favourable ${s.favourable}</a> · <a href="#" data-e="${s.failure}">failure ${s.failure}</a> <span class="muted">(${s.note})</span>`;
  document.querySelectorAll('#show a').forEach(a=>a.onclick=e=>{e.preventDefault();$('ev').value=a.dataset.e;run()});}
 $('date').onchange=()=>{const e=evs.find(e=>e.event_date==$('date').value);if(e)$('ev').value=e.event_id;else $('err').textContent='No KXHIGHNY event in the experiment window for that date'};
 $('ev').onchange=()=>{$('date').value=evs.find(e=>e.event_id==$('ev').value).event_date};
-$('go').onclick=run;$('gold').onclick=()=>{$('ev').value=golden;$('asof').value='08:00';$('dropq').checked=false;$('wdel').value=0;run()};
+$('go').onclick=run;$('gold').onclick=()=>{$('ev').value=golden;$('asof').value=cutoff;$('dropq').checked=false;$('wdel').value=0;run()};
 async function run(){$('err').textContent='';$('revout').innerHTML='';
  const q=new URLSearchParams({event:$('ev').value,as_of:$('asof').value,drop_last_quote:$('dropq').checked?1:0,weather_delay_h:$('wdel').value||0});
  try{cur=await j('/api/replay?'+q);curq=q}catch(e){$('err').textContent=e.message;return}render(cur)}

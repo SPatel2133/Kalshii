@@ -39,7 +39,6 @@ def lst_day_bounds(event_date, tz):
 
 def fetch_mos(fetcher, cfg, start, end):
     """Fetch GFS MOS rows for runtimes in [start-1 day, end] in month chunks. Returns (rows, metas)."""
-    src = cfg["sources"]
     rows, metas = [], []
     for m0 in month_starts(start - timedelta(days=1), end):
         r, meta = fetch_mos_month(fetcher, cfg, m0)

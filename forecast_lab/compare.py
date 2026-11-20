@@ -5,7 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from . import config as C, evaluation as E
+from . import config as C
+from . import evaluation as E
 from .util import read_jsonl, write_json
 
 

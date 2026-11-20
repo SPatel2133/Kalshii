@@ -9,17 +9,17 @@ Fitting policy (frozen in configs/nyc-0800-v1.toml):
 - Final upstream state = fit on all development labels settled by test_start; no refit inside the test block.
 """
 import hashlib
-import json
 import math
-from datetime import date, timedelta
+from datetime import date
 from pathlib import Path
 
 import numpy as np
 
-from . import FEATURE_VERSION, models as M
+from . import FEATURE_VERSION
+from . import models as M
 from . import reasons as R
 from .replay import cutoff_utc, market_vector
-from .util import canonical_json, fingerprint, parse_iso, read_jsonl, utc_now_iso, write_json, write_jsonl
+from .util import fingerprint, parse_iso, read_jsonl, utc_now_iso
 
 PRIMARY_FAMILIES = ["market_raw", "market_recal", "market_context", "weather", "coherent", "fixed_blend",
                     "adaptive_blend", "adaptive_blend_raw", "adaptive_corrected", "climatology"]
@@ -200,7 +200,7 @@ def predict_upstream(cfg, st, row, lams=None):
 
 
 def gate_x(up, mkey="coherent"):
-    m, w = up[mkey]["buckets"], up["weather"]["buckets"]
+    up[mkey]["buckets"], up["weather"]["buckets"]
     return None
 
 
@@ -299,7 +299,7 @@ def fit(cfg, feats, labels, boundary=None, log=print):
         return sum(-math.log(M.floor_normalize(o["up"][key]["buckets"], floor)[o["wi"]]) for o in rs) / max(len(rs), 1), len(rs)
 
     lam_scores = {lam: nll_of(f"coherent@{lam}", oof)[0] for lam in lam_grid}
-    lam = min(lam_grid, key=lambda l: (lam_scores[l], l))
+    lam = min(lam_grid, key=lambda candidate: (lam_scores[candidate], candidate))
     for o in oof:
         if f"coherent@{lam}" in o["up"]:
             o["up"]["coherent"] = o["up"][f"coherent@{lam}"]
@@ -328,7 +328,7 @@ def fit(cfg, feats, labels, boundary=None, log=print):
         fit_rows = [o for o in rows if o["fold"] < K - 1]
         val_rows = [o for o in rows if o["fold"] == K - 1]
         scores = {l2: gate_nll(gate_fit(mkey, fit_rows, l2), mkey, val_rows) for l2 in cfg["models"]["gate_l2_grid"]}
-        best = min(scores, key=lambda l: (scores[l], -l))
+        best = min(scores, key=lambda candidate: (scores[candidate], -candidate))
         gates[name] = gate_fit(mkey, rows, best)
         l2_search[name] = {"validation_nll": {str(k): v for k, v in scores.items()}, "selected_l2": best,
                            "n_fit": len(fit_rows), "n_val": len(val_rows)}

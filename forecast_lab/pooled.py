@@ -8,7 +8,10 @@ from pathlib import Path
 
 import numpy as np
 
-from . import backtest as B, config as C, evaluation as E, models as M
+from . import backtest as B
+from . import config as C
+from . import evaluation as E
+from . import models as M
 from .evaluation import block_bootstrap_means
 from .replay import cutoff_utc, market_vector
 from .service import models_dir
@@ -504,6 +507,7 @@ def verify_pooled_test_seals(pool_cfg, preregistration_sha):
 def pooled_test_stage(pool_cfg, preregistration_sha):
     output_dir, frozen, city_configs, city_inputs, input_prediction_shas = _load_pooled_test_inputs(
         pool_cfg, preregistration_sha)
+    pooled_state_path = output_dir / "pooled_state.json"
 
     pooled_predictions = []
     recalibration_checks = {}

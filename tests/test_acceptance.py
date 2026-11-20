@@ -1,12 +1,13 @@
 import copy
-import math
 import random
 from datetime import date, datetime, timedelta, timezone
 
 import numpy as np
 import pytest
 
-from forecast_lab import contracts, evaluation as E, models as M, replay, weather
+from forecast_lab import contracts, replay, weather
+from forecast_lab import evaluation as E
+from forecast_lab import models as M
 from forecast_lab import reasons as R
 from forecast_lab.service import assert_outcome_free, top_level_allowlisted
 from tests.synth import candle, markets

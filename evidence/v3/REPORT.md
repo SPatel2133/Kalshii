@@ -130,6 +130,7 @@ Neither hypothesis is supported. H1's 7-day CI just excludes zero, but the estim
 - The July 2026 fee schedule is applied to the whole history.
 - Pooled α and the pooled margin use other cities' development events whose calendar dates overlap the AUS/LAX test windows
   (pre-registered design; no event's own label is used). A leak-free rerun (§7) gives the same conclusion.
+- **Erratum (fold fits):** the confirmatory pooled fold-α fits counted every eligible development row 5× (one copy per city), so the recorded fold-fit `n`/`nll` in `evidence/v3/pooled/pooled_state.json` are inflated 5×. Deduplicating changes fold α by at most 6.6e-8. The pooled α (1.1952), the margin (0.05) and every reported result are unchanged; the sealed evidence is left as is.
 - MOS publication time is assumed (runtime + 7.5 h); AFOS has no historical MAV bulletins.
 - Dev OOF margins for the blends apply final development downstream parameters to OOF upstream predictions.
 - Excluded on rules-text grounds: Denver; "Miami, FL" and "Philadelphia, PA" wordings; the legacy CHI "NWS's Daily Climate Report"

@@ -105,12 +105,30 @@ The 12Z run (available 19:30Z) is never eligible by 14:00.
   (11 trades, +$0.0134/event, CI [+0.0054, +0.0232], +$0.0127 with slippage, Holm p < 0.001) and NYC 14:00 market_recal (4 trades, +$0.0039). Both come from a handful
   of trades in an exploratory grid of 7 strategies × 6 cities × 3 cutoffs, so they are probably noise.
 
+## 7. Post-hoc sensitivity: leak-free pooled fit (exploratory)
+The confirmatory pooled α and pooled margin were fitted on all cities' development events up to each city's own `test_start`,
+so some of those events are dated inside the AUS/LAX test windows. This rerun, done after the confirmatory scoring, fits
+both only on development events dated before 2025-06-24 (the earliest city `test_start`). It then rescores the same
+1,140-event cohort, which is unchanged in its hash and per-city counts. Config: `configs/v3-pooled-leakfree.toml`. Evidence:
+`evidence/v3/pooled-leakfree/`. The confirmatory dev stage reruns byte-identically.
+
+| | Confirmatory | Leak-free |
+|---|---|---|
+| Dev rows in α fit | 2,080 | 1,142 |
+| Pooled α / margin | 1.1952 / 0.05 | 1.1563 / 0.05 |
+| H1 Δ log loss, 7-day CI | −0.0063 [−0.0146, +0.0016] | −0.0065 [−0.0132, −0.0001] |
+| H1 3-day / 14-day CI | ≈[−0.0143, +0.0020] / ≈[−0.0142, +0.0014] | [−0.0129, +0.0001] / [−0.0128, −0.0003] |
+| H2 P&L per event (trades) | −$0.0010 [−0.0049, +0.0028] (28) | +$0.0005 [−0.0021, +0.0031] (12) |
+| H2 +1¢ slippage, bootstrap p | ≈−$0.0013, 0.68 | +$0.0004, 0.37 |
+
+Neither hypothesis is supported. H1's 7-day CI just excludes zero, but the estimate misses the pre-registered −0.01 effect size, and the 3-day CI includes zero. No city is significant after Holm correction (smallest adjusted p: AUS H1 0.255, LAX H2 0.135). The conclusion does not change.
+
 ## Limitations
 - **Fill assumption:** orders fill in full at the as-of bid/ask with no depth or queue (candles carry no depth). This is the main
   optimism; +1¢ slippage only partly covers it.
 - The July 2026 fee schedule is applied to the whole history.
 - Pooled α and the pooled margin use other cities' development events whose calendar dates overlap the AUS/LAX test windows
-  (pre-registered design; no event's own label is used).
+  (pre-registered design; no event's own label is used). A leak-free rerun (§7) gives the same conclusion.
 - MOS publication time is assumed (runtime + 7.5 h); AFOS has no historical MAV bulletins.
 - Dev OOF margins for the blends apply final development downstream parameters to OOF upstream predictions.
 - Excluded on rules-text grounds: Denver; "Miami, FL" and "Philadelphia, PA" wordings; the legacy CHI "NWS's Daily Climate Report"

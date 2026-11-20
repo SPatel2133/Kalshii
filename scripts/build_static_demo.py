@@ -22,6 +22,15 @@ GOLDEN_EVENT_ID = "KXHIGHNY-26AUG13"
 GOLDEN_FIXTURE = "tests/fixtures/golden_v2_KXHIGHNY-26AUG13.json"
 NYC_PREDICTIONS = "evidence/nyc-0800-v2/eval-audit/predictions.jsonl"
 POOLED_FAMILY = "market_recal_pooled"
+DISPLAY_FAMILIES = (
+    "market_raw",
+    "market_recal",
+    POOLED_FAMILY,
+    "weather",
+    "fixed_blend",
+    "adaptive_blend",
+)
+CITY_FAMILIES = set(DISPLAY_FAMILIES) - {POOLED_FAMILY}
 
 
 def read_jsonl(path):
@@ -73,12 +82,12 @@ def city_events(city, config, input_paths, source_paths, pooled_rows):
 
     predictions = defaultdict(dict)
     metadata = {}
-    expected_families = set()
     for row in read_jsonl(prediction_path):
         if row.get("mode") != "model":
             continue
         family = family_of(row)
-        expected_families.add(family)
+        if family not in CITY_FAMILIES:
+            continue
         event_id = row["event_id"]
         bucket_ids = row["bucket_ids"]
         event_metadata = {
@@ -109,7 +118,7 @@ def city_events(city, config, input_paths, source_paths, pooled_rows):
     events = []
     city_name = CITY_NAMES[config["station_phrase"]]
     for event_id, family_predictions in predictions.items():
-        if set(family_predictions) != expected_families:
+        if set(family_predictions) != CITY_FAMILIES:
             continue
         if event_id not in outcomes or event_id not in pooled_rows:
             continue
@@ -137,7 +146,10 @@ def city_events(city, config, input_paths, source_paths, pooled_rows):
             ],
             "probs": probabilities,
         })
-    return events, {event["event_id"]: outcomes[event["event_id"]] for event in events}
+    return events, {
+        event["event_id"]: {"winner_bucket": outcomes[event["event_id"]]}
+        for event in events
+    }
 
 
 def golden_event(source_paths):
@@ -153,11 +165,13 @@ def golden_event(source_paths):
         if row.get("event_id") != GOLDEN_EVENT_ID or row.get("mode") != "model":
             continue
         family = family_of(row)
+        if family not in CITY_FAMILIES:
+            continue
         if row["bucket_ids"] != bucket_ids:
             raise ValueError(f"NYC golden bucket ids do not match {family}")
         probabilities[family] = rounded_probabilities(row["probabilities"])
-    if not probabilities:
-        raise ValueError("NYC golden predictions are missing")
+    if set(probabilities) != CITY_FAMILIES:
+        raise ValueError("NYC golden predictions are incomplete")
     if probabilities.get("adaptive_blend") != rounded_probabilities(fixture["probabilities"]):
         raise ValueError("NYC golden adaptive blend does not match its fixture")
     probabilities["adaptive_blend"] = rounded_probabilities(fixture["probabilities"])
@@ -204,7 +218,7 @@ def build(output_dir):
 
     golden, winner = golden_event(source_paths)
     all_events = [golden, *sorted(all_events, key=lambda event: (event["city"], event["event_date"]))]
-    outcomes[golden["event_id"]] = winner
+    outcomes[golden["event_id"]] = {"winner_bucket": winner}
     payload = {
         "source": source_manifest(source_paths),
         "events": all_events,

@@ -1,4 +1,3 @@
-import gzip
 import json
 import re
 import subprocess
@@ -22,26 +21,15 @@ FORBIDDEN = {
     "p_winner",
     "label_reasons",
 }
-
-
-def read_jsonl(path):
-    opener = gzip.open if path.suffix == ".gz" else open
-    with opener(path, "rt", encoding="utf-8") as stream:
-        for line in stream:
-            if line.strip():
-                yield json.loads(line)
-
-
-def family_of(row):
-    return row.get("family") or row["model_id"].split(".", 1)[1].split("@", 1)[0]
-
-
-def families_in(path):
-    return {
-        family_of(row)
-        for row in read_jsonl(path)
-        if row.get("mode") == "model" and row.get("probabilities") is not None
-    }
+CITY_FAMILIES = {
+    "market_raw",
+    "market_recal",
+    "market_recal_pooled",
+    "weather",
+    "fixed_blend",
+    "adaptive_blend",
+}
+NYC_FAMILIES = CITY_FAMILIES - {"market_recal_pooled"}
 
 
 def assert_outcome_free(value):
@@ -80,18 +68,13 @@ def test_events_are_outcome_free_and_cover_all_city_families():
 
     golden = next(event for event in events if event["event_id"] == GOLDEN_EVENT_ID)
     assert golden["split"] == "golden (development)"
-    golden_families = families_in(ROOT / "evidence/nyc-0800-v2/eval-audit/predictions.jsonl")
-    city_families = {
-        city: families_in(ROOT / f"evidence/v3/{city}-0800/eval-test/predictions.jsonl.gz")
-        | {"market_recal_pooled"}
-        for city in CITY_CODES
-    }
 
     for event in events:
         if event["city"] == "nyc":
-            expected = golden_families
+            expected = NYC_FAMILIES
         else:
-            expected = city_families[event["city"]]
+            assert event["city"] in CITY_CODES
+            expected = CITY_FAMILIES
         assert set(event["probs"]) == expected
         assert all(len(vector) == len(event["buckets"]) for vector in event["probs"].values())
 
@@ -106,8 +89,30 @@ def test_outcomes_url_is_only_referenced_inside_reveal():
     assert re.search(r"fetch\(['\"]data/outcomes\.json['\"]\)", html)
 
 
+def test_demo_uses_six_families_in_order_and_marks_golden_pool_unavailable():
+    html = (ROOT / "docs/demo/index.html").read_text(encoding="utf-8")
+    match = re.search(r"const FAMILY_ORDER = \[(.*?)\];", html, re.DOTALL)
+    assert match
+    assert re.findall(r'"([^"]+)"', match.group(1)) == [
+        "market_raw",
+        "market_recal",
+        "market_recal_pooled",
+        "weather",
+        "fixed_blend",
+        "adaptive_blend",
+    ]
+    assert "NYC is not in the 5-city pool" in html
+    assert "adaptive_blend_raw" not in html
+    assert "adaptive_corrected" not in html
+    assert "climatology" not in html
+    assert "coherent" not in html
+    assert "market_context" not in html
+
+
 def test_outcomes_match_the_event_set_and_golden_fixture():
     payload = json.loads((DATA_DIR / "events.json").read_text(encoding="utf-8"))
     outcomes = json.loads((DATA_DIR / "outcomes.json").read_text(encoding="utf-8"))
+    fixture = json.loads((ROOT / "tests/fixtures/golden_v2_KXHIGHNY-26AUG13.json").read_text(encoding="utf-8"))
     assert set(outcomes) == {event["event_id"] for event in payload["events"]}
-    assert outcomes[GOLDEN_EVENT_ID] == "85-86"
+    assert all(set(outcome) == {"winner_bucket"} for outcome in outcomes.values())
+    assert outcomes[GOLDEN_EVENT_ID]["winner_bucket"] == fixture["label"]["winner_bucket"] == "85-86"

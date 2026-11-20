@@ -36,9 +36,10 @@
     .event-heading { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 14px; }
     h2 { margin: 0; font-size: clamp(1.1rem, 2.5vw, 1.55rem); }
     .meta { margin: 7px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
-    .reveal-status { min-height: 1.3em; margin: 12px 0 0; color: var(--accent); font-weight: 650; }
+    .reveal-status { margin: 0; color: var(--accent); font-weight: 650; }
+    .reveal-status:not(:empty) { margin-top: 12px; }
     .table-scroll { overflow-x: auto; border-radius: 10px; }
-    table { width: 100%; min-width: 950px; border-collapse: separate; border-spacing: 0; font-size: .86rem; }
+    table { width: 100%; min-width: 0; border-collapse: separate; border-spacing: 0; font-size: .86rem; }
     th, td { min-width: 118px; padding: 10px 11px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: middle; }
     thead th { position: sticky; top: 0; color: #41546a; background: #f6f9fb; font-size: .78rem; line-height: 1.3; }
     thead th:first-child, tbody th, tfoot th { min-width: 112px; }
@@ -46,7 +47,7 @@
     tbody tr.winner { background: #e9f7ed; }
     tbody tr.winner th { color: #166534; }
     .value { display: block; margin-bottom: 6px; font-variant-numeric: tabular-nums; font-weight: 700; }
-    .bar-track { height: 5px; overflow: hidden; border-radius: 99px; background: #e7edf1; }
+    .bar-track { display: block; width: 100%; height: 5px; overflow: hidden; border-radius: 99px; background: #e7edf1; }
     .bar { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
     .dash { color: #9aa7b4; }
     tfoot th, tfoot td { border-top: 2px solid #afbec9; border-bottom: 0; background: #fbfcfd; font-variant-numeric: tabular-nums; font-weight: 700; }
@@ -120,7 +121,12 @@
   </footer>
   <script>
     const FAMILY_ORDER = [
-      "market_raw", "market_recal", "market_recal_pooled", "weather", "fixed_blend", "adaptive_blend"
+      "market_raw",
+      "market_recal",
+      "market_recal_pooled",
+      "weather",
+      "fixed_blend",
+      "adaptive_blend"
     ];
     const FAMILY_LABELS = {
       market_raw: "Market",
@@ -128,12 +134,7 @@
       market_recal_pooled: "Pooled recal.",
       weather: "Weather",
       fixed_blend: "Fixed blend",
-      adaptive_blend: "Adaptive blend",
-      adaptive_blend_raw: "Adaptive blend (raw)",
-      adaptive_corrected: "Adaptive corrected",
-      climatology: "Climatology",
-      coherent: "Coherent",
-      market_context: "Market context"
+      adaptive_blend: "Adaptive blend"
     };
     const citySelect = document.getElementById("city");
     const eventSelect = document.getElementById("event");
@@ -142,6 +143,7 @@
     let events = [];
     let outcomesCache = null;
     let revealedWinner = null;
+    let isRevealed = false;
 
     async function reveal() {
       const event = currentEvent();
@@ -150,7 +152,10 @@
         if (!response.ok) throw new Error("Could not load the outcome file.");
         outcomesCache = await response.json();
       }
-      revealedWinner = outcomesCache[event.event_id]?.winner_bucket ?? null;
+      const outcome = outcomesCache[event.event_id];
+      if (!outcome?.winner_bucket) throw new Error("No winner is available for this event.");
+      revealedWinner = outcome.winner_bucket;
+      isRevealed = true;
       render();
     }
 
@@ -163,21 +168,18 @@
     }
 
     function orderedFamilies() {
-      const all = new Set(events.flatMap(event => Object.keys(event.probs)));
-      return [
-        ...FAMILY_ORDER.filter(family => all.has(family)),
-        ...[...all].filter(family => !FAMILY_ORDER.includes(family)).sort()
-      ];
+      return FAMILY_ORDER;
     }
 
     function familyLabel(family) {
       return FAMILY_LABELS[family] || family.replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
     }
 
-    function addCell(row, text, className = "") {
+    function addCell(row, text, className = "", title = "") {
       const cell = document.createElement("td");
       cell.textContent = text;
       if (className) cell.className = className;
+      if (title) cell.title = title;
       row.append(cell);
       return cell;
     }
@@ -189,6 +191,8 @@
       const winnerIndex = revealedWinner
         ? event.buckets.findIndex(bucket => bucket.bucket_id === revealedWinner)
         : -1;
+      revealButton.textContent = isRevealed ? "Revealed" : "Reveal";
+      revealButton.disabled = isRevealed;
       document.getElementById("event-title").textContent =
         `${event.city_name} · ${event.event_date} · ${event.event_id}`;
       document.getElementById("event-meta").textContent =
@@ -225,7 +229,13 @@
         for (const family of families) {
           const vector = event.probs[family];
           if (!vector) {
-            addCell(row, "—", "dash");
+            const missingPooled = event.city === "nyc" && family === "market_recal_pooled";
+            addCell(
+              row,
+              missingPooled ? "n/a" : "—",
+              "dash",
+              missingPooled ? "NYC is not in the 5-city pool" : ""
+            );
             continue;
           }
           const probability = vector[bucketIndex];
@@ -255,10 +265,17 @@
         row.append(title);
         for (const family of families) {
           const probability = event.probs[family]?.[winnerIndex];
-          addCell(row, probability === undefined
-            ? "—"
-            : (-Math.log(Math.max(probability, 1e-6))).toFixed(3),
-          probability === undefined ? "dash" : "");
+          const missingPooled = probability === undefined
+            && event.city === "nyc"
+            && family === "market_recal_pooled";
+          addCell(
+            row,
+            probability === undefined
+              ? missingPooled ? "n/a" : "—"
+              : (-Math.log(Math.max(probability, 1e-6))).toFixed(3),
+            probability === undefined ? "dash" : "",
+            missingPooled ? "NYC is not in the 5-city pool" : ""
+          );
         }
         foot.append(row);
       }
@@ -277,6 +294,8 @@
         ? selectedId
         : cityEvents[0]?.event_id;
       revealedWinner = null;
+      isRevealed = false;
+      statusNode.classList.remove("error");
       render();
     }
 
@@ -299,6 +318,8 @@
     citySelect.addEventListener("change", () => fillEvents(citySelect.value));
     eventSelect.addEventListener("change", () => {
       revealedWinner = null;
+      isRevealed = false;
+      statusNode.classList.remove("error");
       render();
     });
     document.getElementById("golden").addEventListener("click", () => {
@@ -322,7 +343,6 @@
       } catch (error) {
         statusNode.textContent = error.message;
         statusNode.classList.add("error");
-      } finally {
         revealButton.disabled = false;
       }
     });

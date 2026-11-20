@@ -45,3 +45,12 @@ The v2 erratum count artifact can be reproduced offline:
 cd /home/ubuntu/repos/Kalshii-v3
 PYTHONPATH=. .venv/bin/python scripts/v2_erratum.py
 ```
+
+Before archiving v3 per-event evidence, compress the tracked JSONL files and write their checksums:
+
+```sh
+cd /home/ubuntu/repos/Kalshii-v3
+PYTHONPATH=. .venv/bin/python scripts/compress_evidence.py
+```
+
+This creates deterministic `.jsonl.gz` files and `evidence/v3/CHECKSUMS.sha256`; the sealed prediction hashes remain hashes of the uncompressed bytes.

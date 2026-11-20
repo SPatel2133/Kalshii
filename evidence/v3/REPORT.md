@@ -117,5 +117,8 @@ The 12Z run (available 19:30Z) is never eligible by 14:00.
   wording (1,291 events).
 
 ## Files
-Per city: `evidence/v3/<city>-<hhmm>/{model_manifest.json, eval-test/, backtest-test/}` (sealed predictions, evaluation rows,
-trades). Pooled: `evidence/v3/pooled[-1100|-1400]/{pooled_state.json, summary.json, trades.jsonl}`. Reproduce: `docs/CHECKPOINT.md`.
+Per city: `evidence/v3/<city>-<hhmm>/{model_manifest.json, eval-test/, backtest-test/}` (sealed `predictions.jsonl.gz`,
+`evaluation_rows.jsonl.gz`, `trades.jsonl.gz`). Pooled: `evidence/v3/pooled[-1100|-1400]/{pooled_state.json, summary.json,
+predictions.jsonl.gz, trades.jsonl.gz}`. Reproduce: `docs/CHECKPOINT.md`.
+
+Per-event files are deterministic gzip; CHECKSUMS.sha256 lists uncompressed and compressed hashes; sealed hashes are of the uncompressed bytes.

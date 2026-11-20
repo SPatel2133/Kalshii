@@ -12,7 +12,7 @@ from . import backtest as B, config as C, evaluation as E, models as M
 from .evaluation import block_bootstrap_means
 from .replay import cutoff_utc, market_vector
 from .service import models_dir
-from .util import read_jsonl, sha256_bytes, write_json, write_jsonl
+from .util import read_bytes_maybe_gz, read_jsonl, sha256_bytes, write_json, write_jsonl
 
 
 def fit_pooled_alpha(dev_rows, floor):
@@ -462,7 +462,7 @@ def _comparison_rows(city_result, pair, floor):
     return dates, deltas
 
 
-def pooled_test_stage(pool_cfg, preregistration_sha):
+def _load_pooled_test_inputs(pool_cfg, preregistration_sha):
     output_dir = Path(pool_cfg.get("output_dir", "evidence/v3/pooled"))
     pooled_state_path = output_dir / "pooled_state.json"
     frozen = require_pooled_state(pooled_state_path)
@@ -470,9 +470,7 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
         raise ValueError("pooled_state.json belongs to a different pre-registration commit")
 
     city_configs, city_inputs = {}, {}
-    pooled_predictions = []
     input_prediction_shas = {}
-    recalibration_checks = {}
     for config_path in pool_cfg["city_configs"]:
         cfg = C.load(config_path)
         city = cfg["experiment_id"].removeprefix("v3-").removesuffix("-0800")
@@ -485,23 +483,41 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
         summary_path = eval_dir / "summary.json"
         predictions = read_jsonl(prediction_path)
         eval_summary = json.loads(summary_path.read_text())
-        prediction_sha = sha256_bytes(prediction_path.read_bytes())
+        prediction_sha = sha256_bytes(read_bytes_maybe_gz(prediction_path))
         if prediction_sha != eval_summary.get("predictions_sha256_sealed_before_scoring"):
             raise ValueError(f"{city} eval-test predictions do not match their sealed summary")
+        input_prediction_shas[city] = prediction_sha
+        city_inputs[city] = {
+            "cfg": cfg,
+            "state": state,
+            "predictions": predictions,
+            "prediction_sha256": prediction_sha,
+        }
+    return output_dir, frozen, city_configs, city_inputs, input_prediction_shas
+
+
+def verify_pooled_test_seals(pool_cfg, preregistration_sha):
+    _, _, _, _, input_prediction_shas = _load_pooled_test_inputs(pool_cfg, preregistration_sha)
+    return input_prediction_shas
+
+
+def pooled_test_stage(pool_cfg, preregistration_sha):
+    output_dir, frozen, city_configs, city_inputs, input_prediction_shas = _load_pooled_test_inputs(
+        pool_cfg, preregistration_sha)
+
+    pooled_predictions = []
+    recalibration_checks = {}
+    for city, city_input in city_inputs.items():
+        cfg = city_input["cfg"]
+        state = city_input["state"]
+        predictions = city_input["predictions"]
         feature_path = Path(cfg["paths"]["work_dir"]) / "dataset" / "features.jsonl"
         features = {row["event_id"]: row for row in read_jsonl(feature_path)}
         n_checked = market_recalibration_check(cfg, state, predictions, features)
         recalibration_checks[city] = n_checked
         alpha = frozen["pooled_alpha"]
         pooled_predictions.extend(pooled_test_predictions(city, cfg, predictions, features, alpha))
-        input_prediction_shas[city] = prediction_sha
-        city_inputs[city] = {
-            "cfg": cfg,
-            "state": state,
-            "predictions": predictions,
-            "features": features,
-            "prediction_sha256": prediction_sha,
-        }
+        city_input["features"] = features
 
     seen = set()
     for row in pooled_predictions:
@@ -512,7 +528,7 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
     pooled_predictions.sort(key=lambda row: (row["event_date"], row["event_id"]))
     predictions_path = output_dir / "predictions.jsonl"
     write_jsonl(predictions_path, pooled_predictions)
-    pooled_predictions_sha = sha256_bytes(predictions_path.read_bytes())
+    pooled_predictions_sha = sha256_bytes(read_bytes_maybe_gz(predictions_path))
     prediction_manifest = {
         "pre_registration_sha": preregistration_sha,
         "predictions_sha256": pooled_predictions_sha,

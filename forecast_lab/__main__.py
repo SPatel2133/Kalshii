@@ -9,7 +9,7 @@ from pathlib import Path
 
 from . import backtest as B, config as C, contracts, dataset, download, evaluation as E, pooled as P, v3, weather
 from .service import ReplayService, load_state, models_dir
-from .util import atomic_write, read_jsonl, sha256_bytes, write_json, write_jsonl
+from .util import atomic_write, read_bytes_maybe_gz, read_jsonl, sha256_bytes, write_json, write_jsonl
 
 
 def _cfg(args):
@@ -189,7 +189,7 @@ def cmd_evaluate(args):
     preds, evals = E.evaluate_rows(cfg, state, feats, labels, ids)
     out = Path(cfg["paths"]["evidence_dir"]) / f"eval-{args.split}"
     write_jsonl(out / "predictions.jsonl", preds)
-    sealed = sha256_bytes((out / "predictions.jsonl").read_bytes())
+    sealed = sha256_bytes(read_bytes_maybe_gz(out / "predictions.jsonl"))
     write_jsonl(out / "evaluation_rows.jsonl", evals)
     summ, common = E.summarize(cfg, evals, start, end)
     cov_w = [c for c in cov if start.isoformat() <= c["event_date"] <= end.isoformat()]
@@ -328,8 +328,14 @@ def cmd_backtest(args):
     else:
         raise ValueError(f"{cfg['experiment_id']} has no audit window")
     pred_path = Path(cfg["paths"]["evidence_dir"]) / f"eval-{args.split}" / "predictions.jsonl"
-    if not pred_path.exists():
+    if not pred_path.exists() and not Path(str(pred_path) + ".gz").exists():
         raise FileNotFoundError(f"sealed split predictions not found: {pred_path}")
+    eval_summary_path = pred_path.parent / "summary.json"
+    if eval_summary_path.is_file():
+        eval_summary = json.loads(eval_summary_path.read_text())
+        expected_sha = eval_summary.get("predictions_sha256_sealed_before_scoring")
+        if expected_sha is not None and sha256_bytes(read_bytes_maybe_gz(pred_path)) != expected_sha:
+            raise ValueError("sealed split predictions do not match their summary")
     feats, labels, _ = _ensure_dataset(cfg)
     if args.margin is not None:
         margins = {family: args.margin for family in B.STRATEGIES}
@@ -384,7 +390,7 @@ def cmd_nyc_reanalysis(args):
         settings["margins"], settings["fee_rate"], settings["contracts"])
     prediction_path = Path(cfg["paths"]["evidence_dir"]) / "eval-test" / "predictions.jsonl"
     test_summary = json.loads((prediction_path.parent / "summary.json").read_text())
-    prediction_sha = sha256_bytes(prediction_path.read_bytes())
+    prediction_sha = sha256_bytes(read_bytes_maybe_gz(prediction_path))
     if prediction_sha != test_summary["predictions_sha256_sealed_before_scoring"]:
         raise ValueError("saved v2 test predictions do not match their seal")
     start, end = date.fromisoformat(cfg["split"]["test_start"]), date.fromisoformat(cfg["split"]["test_end"])

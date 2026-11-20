@@ -5,7 +5,7 @@ import collections
 from datetime import date, timedelta
 from pathlib import Path
 
-from . import contracts, kalshi, replay, weather
+from . import FEATURE_VERSION, contracts, kalshi, replay, weather
 from . import reasons as R
 from .download import candle_range, load_catalogue
 from .fetch import FetchError, Fetcher
@@ -21,6 +21,7 @@ class Sources:
         self.events, self.pages = load_catalogue(cfg, offline=offline)
         self._runs = {}
         self._months = {}
+        self._asos = {}
 
     def candles(self, market):
         s, t = candle_range(market)
@@ -48,6 +49,14 @@ class Sources:
                 metas.append(m)
             self._runs = {key: (weather.index_runs(rows), metas)}  # keep only the latest month window
         return self._runs[key]
+
+    def asos(self, year):
+        if year not in self._asos:
+            try:
+                self._asos[year], _ = weather.fetch_asos(self.fetcher, self.cfg, year)
+            except FetchError:
+                self._asos[year] = []
+        return self._asos[year]
 
 
 def build_event(src, event_id, local_hhmm=None, lag_h=None, scenario=None, drop_last_quote=False,
@@ -81,9 +90,22 @@ def build_event(src, event_id, local_hhmm=None, lag_h=None, scenario=None, drop_
     runs, metas = src.mos_runs(d)
     prov["weather"] = [{"sha256": m.get("sha256"), "params": m.get("params"), "path": m.get("path"),
                         "failure_class": m.get("failure_class")} for m in metas]
-    wrec = weather.select_forecast(runs, d, cut, lag_h + weather_delay_h)
+    features = cfg["weather"].get("features", ["nx"])
+    local_day = "sampled_minus_nx" in features
+    wrec = weather.select_forecast(runs, d, cut, lag_h + weather_delay_h, local_day=local_day)
     row = replay.build_snapshot(rules, candles, wrec, cut, cfg["quotes"], exploratory=(local_hhmm != cfg["cutoff_local"]),
-                                scenario=scenario)
+                                scenario=scenario, feature_version=cfg.get("feature_version", FEATURE_VERSION))
+    if "sampled_minus_nx" in features:
+        selected = row["weather"]["selected"]
+        if selected is None or selected.get("sampled_max_local_f") is None:
+            row["flags"] = sorted(set(row["flags"] + [R.FORECAST_SAMPLED_MISSING]))
+    if any(name in features for name in ("obs_max_minus_nx", "obs_latest_minus_nx")):
+        obs = weather.observation_summary(src.asos(d.year), d, cut, cfg["weather"].get("obs_latency_min", 10))
+        row["weather"]["obs"] = obs
+        if obs["n_obs"] == 0:
+            row["flags"] = sorted(set(row["flags"] + [R.OBS_UNAVAILABLE]))
+    if "sampled_minus_nx" in features or any(name in features for name in ("obs_max_minus_nx", "obs_latest_minus_nx")):
+        row["fingerprint"] = replay.snapshot_fingerprint(row)
     if prov["fetch_failures"]:
         row["flags"] = sorted(set(row["flags"] + [R.FETCH_FAILED]))
         row["market_status"] = "unavailable"
@@ -100,7 +122,7 @@ def primary_reason(rules, label, row, regime="NWS"):
         order = [R.MISSING_RULE_EVIDENCE, R.OTHER_REGIME, R.INVALID_PARTITION]
         return "rules_valid", next((o for o in order if o in rules["reasons"]), rules["reasons"][0]), flags
     if row.get("market_status") != "complete":
-        order = [R.FETCH_FAILED, R.QUOTES_UNAVAILABLE, R.CROSSED_BOOK, R.QUOTES_STALE, R.PARTIAL_BOARD]
+        order = [R.FETCH_FAILED, R.QUOTES_UNAVAILABLE, R.QUOTES_EMPTY_BOOK, R.CROSSED_BOOK, R.QUOTES_STALE, R.PARTIAL_BOARD]
         return "quote_complete", next((o for o in order if o in row["flags"]), R.QUOTES_UNAVAILABLE), flags
     if row["weather"]["status"] != "available":
         return "weather_available", row["weather"]["reason"], flags

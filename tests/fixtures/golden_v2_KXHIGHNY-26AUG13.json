@@ -1,0 +1,108 @@
+{
+  "buckets": [
+    {
+      "ask": 0.64,
+      "bid": 0.63,
+      "bucket_id": "le84",
+      "hi": 84,
+      "lo": null,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-T85"
+    },
+    {
+      "ask": 0.33,
+      "bid": 0.32,
+      "bucket_id": "85-86",
+      "hi": 86,
+      "lo": 85,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-B85.5"
+    },
+    {
+      "ask": 0.04,
+      "bid": 0.03,
+      "bucket_id": "87-88",
+      "hi": 88,
+      "lo": 87,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-B87.5"
+    },
+    {
+      "ask": 0.01,
+      "bid": 0.0,
+      "bucket_id": "89-90",
+      "hi": 90,
+      "lo": 89,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-B89.5"
+    },
+    {
+      "ask": 0.01,
+      "bid": 0.0,
+      "bucket_id": "91-92",
+      "hi": 92,
+      "lo": 91,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-B91.5"
+    },
+    {
+      "ask": 0.01,
+      "bid": 0.0,
+      "bucket_id": "ge93",
+      "hi": null,
+      "lo": 93,
+      "quote_obs_utc": "2026-08-13T12:00:00Z",
+      "ticker": "KXHIGHNY-26AUG13-T92"
+    }
+  ],
+  "candle_sha256": {
+    "KXHIGHNY-26AUG13-B85.5": "a5e27f103f8eb5856de98cef9fbcb5911d07a418b8c4807a3b1a116f50cc6d65",
+    "KXHIGHNY-26AUG13-B87.5": "6fba1c608fb607e7891d98aacd0072330a0cf714ad5379e0ee435008fde1b94d",
+    "KXHIGHNY-26AUG13-B89.5": "1a5ecbbc1ca839fe3d7f00600e027328fdd84add348e64b39e48d8e1af9a0948",
+    "KXHIGHNY-26AUG13-B91.5": "3b4b660c80bf94d6542121d28a24752f95146923b8c27e0815bd61ddfcb38ce1",
+    "KXHIGHNY-26AUG13-T85": "f815b1902f3a5ccca41a36ed109a97eb56d6276a873c303d4e87a43583282c58",
+    "KXHIGHNY-26AUG13-T92": "e58a390cf0530975a8ca21d1e41fd65a562ab1c67b28ffc55bea678c0cd27764"
+  },
+  "cutoff_utc": "2026-08-13T12:00:00Z",
+  "event_id": "KXHIGHNY-26AUG13",
+  "label": {
+    "settled_value_f": 85,
+    "settlement_ts": "2026-08-14T12:04:54.405038Z",
+    "winner_bucket": "85-86",
+    "winner_ticker": "KXHIGHNY-26AUG13-B85.5"
+  },
+  "model_id": "nyc-0800-v2.adaptive_blend@2025-10-01",
+  "prediction_fingerprint": "3250a95931c21c5e757a68d45f2fb50dbe9a6f8c31208c2a38d8a3f731d66560",
+  "probabilities": [
+    0.629972681119,
+    0.320690017859,
+    0.034536029479,
+    0.00493383509,
+    0.004933738374,
+    0.00493369808
+  ],
+  "replay_fingerprint": "f3fbe1ba69e0003369794d656b7ba93ac19f51fadd869675d2ec6f898a351f05",
+  "state_sha256": "cee0c69b15ec491c0b239dd39fb039b91d1dd3cb43ae34090385911b90166678",
+  "weather": {
+    "available_utc": "2026-08-13T07:30:00Z",
+    "mos_daytime_max_f": 87.0,
+    "n_samples_local": 8,
+    "obs": {
+      "latency_min": 10,
+      "n_obs": 9,
+      "obs_latest_f": 72.0,
+      "obs_latest_valid_utc": "2026-08-13T10:51:00Z",
+      "obs_max_so_far_f": 77.0,
+      "window_utc": [
+        "2026-08-13T04:00:00Z",
+        "2026-08-13T11:50:00Z"
+      ]
+    },
+    "runtime_utc": "2026-08-13T00:00:00Z",
+    "sample_window_local_utc": [
+      "2026-08-13T04:00:00Z",
+      "2026-08-14T04:00:00Z"
+    ],
+    "sampled_max_local_f": 86.0
+  }
+}

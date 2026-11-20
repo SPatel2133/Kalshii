@@ -1,0 +1,79 @@
+# Opened after v1 test scoring; v2 changes were chosen from v1's documented limitations, not from v1 test-set losses.
+# Frozen primary experiment. Do not edit after the test block has been opened;
+# copy to a new versioned file instead.
+experiment_id = "nyc-0800-v2"
+feature_version = "feat-v2"
+series = "KXHIGHNY"
+timezone = "America/New_York"
+cutoff_local = "08:00"
+regime = "NWS"
+
+[paths]
+cache_dir = "data/cache"
+work_dir = "data/work-v2"
+evidence_dir = "evidence/nyc-0800-v2"
+golden_fixture = "tests/fixtures/golden_v2_KXHIGHNY-26AUG13.json"
+
+[sources]
+kalshi_base = "https://api.elections.kalshi.com/trade-api/v2"
+iem_mos = "https://mesonet.agron.iastate.edu/cgi-bin/request/mos.py"
+iem_text = "https://mesonet.agron.iastate.edu/api/1/nwstext"
+iem_afos_list = "https://mesonet.agron.iastate.edu/api/1/nws/afos/list.json"
+iem_asos = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
+asos_station = "NYC"
+mos_station = "KNYC"
+mos_model = "GFS"
+
+[http]
+timeout_s = 30
+max_retries = 5
+backoff_s = 1.5
+min_interval_s = 0.25
+
+[quotes]
+candle_period_min = 60
+# Archive candles are emitted only for periods with book or trade changes (observed gaps);
+# the last candle state is carried forward and its age recorded. Older than this = stale.
+max_quote_age_h = 24.0
+history_window_h = 6.0
+empty_book = "exclude"
+
+[weather]
+# Publication is not recorded by the archive. Availability = runtime + lag.
+# Primary lag is conservative relative to the observed 4h13m (see docs/experiment.md);
+# the strict sensitivity rerun uses lag_strict_h.
+lag_h = 7.5
+lag_strict_h = 11.0
+features = ["nx", "sampled_minus_nx", "obs_max_minus_nx", "obs_latest_minus_nx"]
+obs_latency_min = 10
+
+[support]
+lo_f = 0
+hi_f = 120
+
+[split]
+# Chronological. Dates are event-local dates.
+dev_start = "2022-12-01"
+test_start = "2025-10-01"
+test_end = "2026-07-14"
+audit_start = "2026-07-15"
+audit_end = "2026-08-13"
+golden_event = "KXHIGHNY-26AUG13"
+min_train_events = 60
+refit_every_days = 0  # declared policy: no refit inside the test block
+
+[models]
+prob_floor = 1e-4
+seed = 20260813
+blend_folds = 5
+lambda_grid = [1.0, 10.0, 100.0, 1000.0, 10000.0]
+gate_l2_grid = [0.01, 0.1, 1.0, 10.0]
+recal_l2 = 1.0
+
+[evaluation]
+primary = ["adaptive_blend", "fixed_blend"]
+secondary = [["adaptive_blend", "market_raw"], ["adaptive_blend", "market_recal"], ["fixed_blend", "market_raw"]]
+effect_threshold = 0.02
+block_days = 7
+block_sensitivity = [3, 14]
+bootstrap_reps = 2000

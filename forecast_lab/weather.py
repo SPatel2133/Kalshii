@@ -12,13 +12,15 @@ selector only accepts runs with available_utc <= cutoff_utc.
 """
 import csv
 import io
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 from . import reasons as R
 from .util import iso_utc
 
 PROVIDER = "iem"
 SOURCE_ID = "iem-mos-gfs-knyc"
+NY = ZoneInfo("America/New_York")
 
 
 def month_starts(start, end):
@@ -84,22 +86,31 @@ def index_runs(rows):
     return runs
 
 
-def run_forecast(run_rows, event_date):
+def run_forecast(run_rows, event_date, local_day=False):
     """Extract the day-D max proxies from one run. Returns dict or None fields when missing."""
     d0 = datetime(event_date.year, event_date.month, event_date.day, tzinfo=timezone.utc)
     t_nx = d0 + timedelta(days=1)
     nx = [r["n_x"] for r in run_rows if r["ftime"] == t_nx and r["n_x"] is not None]
     lo, hi = d0 + timedelta(hours=5), d0 + timedelta(days=1, hours=5)
     samples = [r["tmp"] for r in run_rows if lo < r["ftime"] <= hi and r["tmp"] is not None]
-    return {"mos_daytime_max_f": nx[0] if nx else None,
-            "nx_valid_utc": iso_utc(t_nx.timestamp()),
-            "nx_window": "daytime max 7am-7pm LST (12Z-00Z) of event date",
-            "sampled_max_f": max(samples) if len(samples) >= 7 else None,
-            "n_samples": len(samples),
-            "sample_window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}
+    out = {"mos_daytime_max_f": nx[0] if nx else None,
+           "nx_valid_utc": iso_utc(t_nx.timestamp()),
+           "nx_window": "daytime max 7am-7pm LST (12Z-00Z) of event date",
+           "sampled_max_f": max(samples) if len(samples) >= 7 else None,
+           "n_samples": len(samples),
+           "sample_window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}
+    if local_day:
+        local_lo = datetime.combine(event_date, time.min, NY).astimezone(timezone.utc)
+        local_hi = datetime.combine(event_date + timedelta(days=1), time.min, NY).astimezone(timezone.utc)
+        local_samples = [r["tmp"] for r in run_rows
+                         if local_lo <= r["ftime"] < local_hi and r["tmp"] is not None]
+        out.update({"sampled_max_local_f": max(local_samples) if len(local_samples) >= 7 else None,
+                    "n_samples_local": len(local_samples),
+                    "sample_window_local_utc": [iso_utc(local_lo.timestamp()), iso_utc(local_hi.timestamp())]})
+    return out
 
 
-def select_forecast(runs, event_date, cutoff_utc, lag_h):
+def select_forecast(runs, event_date, cutoff_utc, lag_h, local_day=False):
     """Strict as-of selector: latest run whose assumed availability (runtime + lag) <= cutoff and which
     carries the day-D daytime max. Returns a weather input record (never None)."""
     cands = []
@@ -107,7 +118,7 @@ def select_forecast(runs, event_date, cutoff_utc, lag_h):
         if rt > cutoff_utc or rt < cutoff_utc - timedelta(hours=36):
             continue
         avail = rt + timedelta(hours=lag_h)
-        fc = run_forecast(runs[rt], event_date)
+        fc = run_forecast(runs[rt], event_date, local_day=local_day)
         cands.append({"runtime_utc": iso_utc(rt.timestamp()), "available_utc": iso_utc(avail.timestamp()),
                       "eligible": avail <= cutoff_utc, **fc})
     elig = [c for c in cands if c["eligible"] and c["mos_daytime_max_f"] is not None]
@@ -136,3 +147,14 @@ def fetch_asos(fetcher, cfg, year):
             continue
         out.append((datetime.strptime(r["valid"], "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc), float(t)))
     return out, meta
+
+
+def observation_summary(observations, event_date, cutoff_utc, latency_min):
+    lo = datetime.combine(event_date, time.min, NY).astimezone(timezone.utc)
+    hi = cutoff_utc - timedelta(minutes=latency_min)
+    selected = sorted(((valid, temp) for valid, temp in observations if lo <= valid <= hi), key=lambda x: x[0])
+    return {"obs_max_so_far_f": max((temp for _, temp in selected), default=None),
+            "obs_latest_f": selected[-1][1] if selected else None,
+            "obs_latest_valid_utc": iso_utc(selected[-1][0].timestamp()) if selected else None,
+            "n_obs": len(selected), "latency_min": latency_min,
+            "window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}

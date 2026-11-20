@@ -1,0 +1,97 @@
+{
+  "adaptive_v2_vs_v1": {
+    "a": "adaptive_blend",
+    "a_wins": 64,
+    "b": "adaptive_blend",
+    "b_wins": 223,
+    "block_days": 7,
+    "ci95_block": [
+      0.00027064233385334485,
+      0.0021422294695229577
+    ],
+    "decision": "loss",
+    "mean_delta": 0.0011718666975499684,
+    "mean_log_loss_a": 0.9865890691397201,
+    "mean_log_loss_b": 0.98541720244217,
+    "metric": "mean log loss (a - b); negative favours a",
+    "n": 287,
+    "only_a": 0,
+    "only_b": 0,
+    "sensitivity": {
+      "14": [
+        0.00035622536394503177,
+        0.002112160470262078
+      ],
+      "3": [
+        0.0002558602967298978,
+        0.002068872622102786
+      ]
+    }
+  },
+  "fixed_v2_vs_v1": {
+    "a": "fixed_blend",
+    "a_wins": 0,
+    "b": "fixed_blend",
+    "b_wins": 0,
+    "block_days": 7,
+    "ci95_block": [
+      0.0,
+      0.0
+    ],
+    "decision": "no supported difference",
+    "mean_delta": 0.0,
+    "mean_log_loss_a": 0.9852993524209868,
+    "mean_log_loss_b": 0.9852993524209868,
+    "metric": "mean log loss (a - b); negative favours a",
+    "n": 287,
+    "only_a": 0,
+    "only_b": 0,
+    "sensitivity": {
+      "14": [
+        0.0,
+        0.0
+      ],
+      "3": [
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "v1_common_cohort_n": 287,
+  "v1_config_sha256": "c3a7b751c32834e26f13b16594e28f86fc9712e103f764865aa10d8fb9469d84",
+  "v1_test_events_behind_empty_latest_book": [],
+  "v2_config_sha256": "f07a5bd6dc945859c62273b909b8df1baf93a5d45ac0a648bb4ef61ac95c7f12",
+  "v2_empty_book_excluded": {
+    "dev": 221,
+    "test": 0
+  },
+  "weather_v2_vs_v1": {
+    "a": "weather",
+    "a_wins": 214,
+    "b": "weather",
+    "b_wins": 73,
+    "block_days": 7,
+    "ci95_block": [
+      -0.2179004621908505,
+      -0.10413276548680536
+    ],
+    "decision": "gain",
+    "mean_delta": -0.15974249914147276,
+    "mean_log_loss_a": 1.4439798880450847,
+    "mean_log_loss_b": 1.6037223871865576,
+    "metric": "mean log loss (a - b); negative favours a",
+    "n": 287,
+    "only_a": 0,
+    "only_b": 0,
+    "sensitivity": {
+      "14": [
+        -0.22629209377005208,
+        -0.100930752826606
+      ],
+      "3": [
+        -0.22083480866319213,
+        -0.10271873384711275
+      ]
+    }
+  }
+}

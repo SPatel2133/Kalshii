@@ -47,10 +47,25 @@ def _valid_quote(c):
     return True
 
 
-def select_quote(candles, cut_ts, max_age_h, hist_h):
-    """Return the bucket's as-of quote record from candles (parsed, canonical) with end_ts <= cut_ts."""
+def _empty_book(c):
+    b, a = c["bid"], c["ask"]
+    return b is not None and a is not None and math.isfinite(b) and math.isfinite(a) and b <= 0.0 and a >= 1.0
+
+
+def select_quote(candles, cut_ts, max_age_h, hist_h, empty_book="skip"):
+    """Return the bucket's as-of quote record from candles (parsed, canonical) with end_ts <= cut_ts.
+
+    empty_book="skip" (v1): an empty latest book is ignored and the previous valid quote is carried forward.
+    empty_book="exclude" (v2): if the latest quoted candle is an empty book, the bucket has no as-of price."""
     elig = [c for c in candles if c["end_ts"] <= cut_ts]
     out = {"n_candles_eligible": len(elig), "disposition": "ok", "flags": []}
+    if empty_book == "exclude":
+        quoted = [c for c in elig if c["bid"] is not None and c["ask"] is not None]
+        if quoted and _empty_book(quoted[-1]):
+            out["disposition"] = R.QUOTES_EMPTY_BOOK
+            out["flags"].append(R.QUOTES_EMPTY_BOOK)
+            out["empty_book_obs_utc"] = iso_utc(quoted[-1]["end_ts"])
+            return out
     quotes = [c for c in elig if _valid_quote(c)]
     if not quotes:
         out["disposition"] = R.QUOTES_UNAVAILABLE
@@ -81,18 +96,20 @@ def select_quote(candles, cut_ts, max_age_h, hist_h):
     return out
 
 
-def build_snapshot(rules, candles_by_ticker, weather_rec, cut, cfg_quotes, exploratory=False, scenario=None):
+def build_snapshot(rules, candles_by_ticker, weather_rec, cut, cfg_quotes, exploratory=False, scenario=None,
+                   feature_version=FEATURE_VERSION):
     """rules: outcome-free event rules record. Returns the historical feature row."""
     cut_ts = int(cut.timestamp())
     row = {"event_id": rules["event_id"], "event_date": rules["event_date"], "cutoff_utc": iso_utc(cut_ts),
-           "feature_version": FEATURE_VERSION, "replay_version": REPLAY_VERSION, "regime": rules.get("regime"),
+           "feature_version": feature_version, "replay_version": REPLAY_VERSION, "regime": rules.get("regime"),
            "exploratory_horizon": bool(exploratory), "scenario": scenario or "historical", "buckets": [],
            "reasons": list(rules.get("reasons", [])), "flags": []}
     conflicts = 0
     for b in rules.get("buckets", []):
         cs, nconf = canonical_candles(candles_by_ticker.get(b["ticker"], []))
         conflicts += nconf
-        q = select_quote(cs, cut_ts, cfg_quotes["max_quote_age_h"], cfg_quotes["history_window_h"])
+        q = select_quote(cs, cut_ts, cfg_quotes["max_quote_age_h"], cfg_quotes["history_window_h"],
+                         cfg_quotes.get("empty_book", "skip"))
         row["buckets"].append({"bucket_id": b["bucket_id"], "ticker": b["ticker"], "lo": b["lo"], "hi": b["hi"], **q})
     row["candle_conflicts"] = conflicts
     disp = [b["disposition"] for b in row["buckets"]]

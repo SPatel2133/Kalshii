@@ -1,7 +1,9 @@
 .venv/
+.venv
 __pycache__/
 *.pyc
 .pytest_cache/
 data/
+data
 *.egg-info/
 evidence/**/records/

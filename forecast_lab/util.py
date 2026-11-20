@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import json
 import math
@@ -45,9 +46,23 @@ def write_jsonl(path, rows):
     atomic_write(path, "".join(canonical_json(r) + "\n" for r in rows))
 
 
+def read_bytes_maybe_gz(path):
+    path = Path(path)
+    if path.suffix == ".gz":
+        with gzip.open(path, "rb") as f:
+            return f.read()
+    if path.exists():
+        return path.read_bytes()
+    gz_path = Path(str(path) + ".gz")
+    if gz_path.exists():
+        with gzip.open(gz_path, "rb") as f:
+            return f.read()
+    return path.read_bytes()
+
+
 def read_jsonl(path):
-    with open(path) as f:
-        return [json.loads(line) for line in f if line.strip()]
+    text = read_bytes_maybe_gz(path).decode("utf-8")
+    return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
 def utc_now_iso():

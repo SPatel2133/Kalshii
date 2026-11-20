@@ -30,9 +30,15 @@ def month_starts(start, end):
         d = date(d.year + (d.month == 12), d.month % 12 + 1, 1)
 
 
+def lst_day_bounds(event_date, tz):
+    zone = ZoneInfo(tz) if isinstance(tz, str) else tz
+    offset = datetime(event_date.year, 1, 1, tzinfo=zone).utcoffset()
+    lo = datetime.combine(event_date, time.min, timezone.utc) - offset
+    return lo, lo + timedelta(days=1)
+
+
 def fetch_mos(fetcher, cfg, start, end):
     """Fetch GFS MOS rows for runtimes in [start-1 day, end] in month chunks. Returns (rows, metas)."""
-    src = cfg["sources"]
     rows, metas = [], []
     for m0 in month_starts(start - timedelta(days=1), end):
         r, meta = fetch_mos_month(fetcher, cfg, m0)
@@ -86,7 +92,7 @@ def index_runs(rows):
     return runs
 
 
-def run_forecast(run_rows, event_date, local_day=False):
+def run_forecast(run_rows, event_date, local_day=False, day_window=None, tz=NY):
     """Extract the day-D max proxies from one run. Returns dict or None fields when missing."""
     d0 = datetime(event_date.year, event_date.month, event_date.day, tzinfo=timezone.utc)
     t_nx = d0 + timedelta(days=1)
@@ -99,18 +105,24 @@ def run_forecast(run_rows, event_date, local_day=False):
            "sampled_max_f": max(samples) if len(samples) >= 7 else None,
            "n_samples": len(samples),
            "sample_window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}
-    if local_day:
-        local_lo = datetime.combine(event_date, time.min, NY).astimezone(timezone.utc)
-        local_hi = datetime.combine(event_date + timedelta(days=1), time.min, NY).astimezone(timezone.utc)
+    if local_day or day_window == "lst":
+        if day_window == "lst":
+            local_lo, local_hi = lst_day_bounds(event_date, tz)
+        else:
+            zone = ZoneInfo(tz) if isinstance(tz, str) else tz
+            local_lo = datetime.combine(event_date, time.min, zone).astimezone(timezone.utc)
+            local_hi = datetime.combine(event_date + timedelta(days=1), time.min, zone).astimezone(timezone.utc)
         local_samples = [r["tmp"] for r in run_rows
                          if local_lo <= r["ftime"] < local_hi and r["tmp"] is not None]
         out.update({"sampled_max_local_f": max(local_samples) if len(local_samples) >= 7 else None,
                     "n_samples_local": len(local_samples),
                     "sample_window_local_utc": [iso_utc(local_lo.timestamp()), iso_utc(local_hi.timestamp())]})
+    if day_window is not None:
+        out["day_window"] = day_window
     return out
 
 
-def select_forecast(runs, event_date, cutoff_utc, lag_h, local_day=False):
+def select_forecast(runs, event_date, cutoff_utc, lag_h, local_day=False, day_window=None, tz=NY, station=None):
     """Strict as-of selector: latest run whose assumed availability (runtime + lag) <= cutoff and which
     carries the day-D daytime max. Returns a weather input record (never None)."""
     cands = []
@@ -118,12 +130,14 @@ def select_forecast(runs, event_date, cutoff_utc, lag_h, local_day=False):
         if rt > cutoff_utc or rt < cutoff_utc - timedelta(hours=36):
             continue
         avail = rt + timedelta(hours=lag_h)
-        fc = run_forecast(runs[rt], event_date, local_day=local_day)
+        fc = run_forecast(runs[rt], event_date, local_day=local_day, day_window=day_window, tz=tz)
         cands.append({"runtime_utc": iso_utc(rt.timestamp()), "available_utc": iso_utc(avail.timestamp()),
                       "eligible": avail <= cutoff_utc, **fc})
     elig = [c for c in cands if c["eligible"] and c["mos_daytime_max_f"] is not None]
-    rec = {"source_id": SOURCE_ID, "station": "KNYC", "lag_h": lag_h, "availability_basis": "runtime+lag assumption",
-           "candidates": cands}
+    rec = {"source_id": SOURCE_ID, "station": station or "KNYC", "lag_h": lag_h,
+           "availability_basis": "runtime+lag assumption", "candidates": cands}
+    if day_window is not None:
+        rec["day_window"] = day_window
     if elig:
         best = elig[-1]
         rec.update({"status": "available", "reason": None, "selected": best})
@@ -149,12 +163,19 @@ def fetch_asos(fetcher, cfg, year):
     return out, meta
 
 
-def observation_summary(observations, event_date, cutoff_utc, latency_min):
-    lo = datetime.combine(event_date, time.min, NY).astimezone(timezone.utc)
+def observation_summary(observations, event_date, cutoff_utc, latency_min, tz=NY, day_window=None):
+    if day_window == "lst":
+        lo, _ = lst_day_bounds(event_date, tz)
+    else:
+        zone = ZoneInfo(tz) if isinstance(tz, str) else tz
+        lo = datetime.combine(event_date, time.min, zone).astimezone(timezone.utc)
     hi = cutoff_utc - timedelta(minutes=latency_min)
     selected = sorted(((valid, temp) for valid, temp in observations if lo <= valid <= hi), key=lambda x: x[0])
-    return {"obs_max_so_far_f": max((temp for _, temp in selected), default=None),
-            "obs_latest_f": selected[-1][1] if selected else None,
-            "obs_latest_valid_utc": iso_utc(selected[-1][0].timestamp()) if selected else None,
-            "n_obs": len(selected), "latency_min": latency_min,
-            "window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}
+    summary = {"obs_max_so_far_f": max((temp for _, temp in selected), default=None),
+               "obs_latest_f": selected[-1][1] if selected else None,
+               "obs_latest_valid_utc": iso_utc(selected[-1][0].timestamp()) if selected else None,
+               "n_obs": len(selected), "latency_min": latency_min,
+               "window_utc": [iso_utc(lo.timestamp()), iso_utc(hi.timestamp())]}
+    if day_window is not None:
+        summary["day_window"] = day_window
+    return summary

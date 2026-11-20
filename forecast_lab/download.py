@@ -3,10 +3,9 @@ import collections
 import json
 import threading
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
 
 from . import contracts, kalshi
-from .fetch import FetchError, Fetcher
+from .fetch import Fetcher, FetchError
 from .util import atomic_write, parse_iso, utc_now_iso
 
 

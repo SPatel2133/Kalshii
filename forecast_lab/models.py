@@ -153,9 +153,8 @@ class WeatherModel:
         if E.shape[1]:
             X = np.column_stack([X, E])
         S = self._sdesign(doys)
-        a = np.array([-np.inf if l is None else l - 0.5 for l in lo])
+        a = np.array([-np.inf if lower is None else lower - 0.5 for lower in lo])
         b = np.array([np.inf if h is None else h + 0.5 for h in hi])
-        xm, xs = X[:, 1].mean(), X[:, 1].std() + 1e-9
 
         def nll(theta):
             split = 4 + E.shape[1]

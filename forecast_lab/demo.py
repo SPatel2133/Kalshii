@@ -11,6 +11,7 @@ Routes:
 import json
 import socket
 import urllib.parse
+from datetime import date
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -21,10 +22,38 @@ from .util import read_jsonl
 PAGE = Path(__file__).with_name("demo.html")
 
 
+def default_event(cfg, events):
+    split = cfg["split"]
+    if split.get("golden_event"):
+        return split["golden_event"]
+
+    dated_events = []
+    for event_id, markets in events.items():
+        event_date = contracts.event_date_from_ticker(event_id)
+        if event_date:
+            dated_events.append((event_date, event_id, markets))
+    if not dated_events:
+        raise ValueError("no dated events available to select a demo default event")
+
+    if split.get("audit_start") and split.get("audit_end"):
+        audit_start = date.fromisoformat(split["audit_start"])
+        audit_end = date.fromisoformat(split["audit_end"])
+        audit_nws_events = [
+            (event_date, event_id)
+            for event_date, event_id, markets in dated_events
+            if audit_start <= event_date <= audit_end and markets
+            and all(contracts.rule_regime(market.get("rules_primary")) == "NWS" for market in markets)
+        ]
+        if audit_nws_events:
+            return max(audit_nws_events)[1]
+
+    return max(dated_events)[1]
+
+
 def make_handler(svc, cfg):
     def showcase():
         p = Path(cfg["paths"]["evidence_dir"]) / "eval-test" / "evaluation_rows.jsonl"
-        if not p.exists():
+        if not p.exists() and not Path(str(p) + ".gz").exists():
             return {"available": False}
         rows = read_jsonl(p)
         by = {}
@@ -67,7 +96,7 @@ def make_handler(svc, cfg):
                         if d and cfg["split"]["dev_start"] <= d.isoformat() <= cfg["split"]["audit_end"]:
                             evs.append({"event_id": e, "event_date": d.isoformat(), "split": split_of(cfg, d)})
                     return self._send(200, {"events": evs, "model_id": f"{svc.state['experiment_id']}.{svc.family}@{svc.state['fit_boundary']}",
-                                            "golden": cfg["split"]["golden_event"]})
+                                            "golden": default_event(cfg, svc.src.events)})
                 if u.path == "/api/replay":
                     r = svc.replay(q["event"], q.get("as_of", "08:00"), drop_last_quote=q.get("drop_last_quote") == "1",
                                    weather_delay_h=float(q.get("weather_delay_h", 0) or 0))

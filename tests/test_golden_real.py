@@ -78,7 +78,7 @@ def test_batch_equals_demo_and_fresh_process(svc):
     r = svc.replay(fx["event_id"])
     batch = Path(CFG["paths"]["evidence_dir"], "eval-audit", "predictions.jsonl")
     if batch.exists():
-        rows = [json.loads(l) for l in batch.read_text().splitlines()]
+        rows = [json.loads(line) for line in batch.read_text().splitlines()]
         b = next(x for x in rows if x["event_id"] == fx["event_id"] and x["model_id"] == MODEL)
         assert b["prediction_fingerprint"] == r["prediction"]["prediction_fingerprint"]
     out = subprocess.run([sys.executable, "-m", "forecast_lab", "replay", "--event", fx["event_id"], "--model", MODEL],

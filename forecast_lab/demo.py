@@ -24,8 +24,9 @@ PAGE = Path(__file__).with_name("demo.html")
 
 def default_event(cfg, events):
     split = cfg["split"]
-    if split.get("golden_event"):
-        return split["golden_event"]
+    golden_event = split.get("golden_event")
+    if golden_event:
+        return golden_event
 
     dated_events = []
     for event_id, markets in events.items():
@@ -35,9 +36,11 @@ def default_event(cfg, events):
     if not dated_events:
         raise ValueError("no dated events available to select a demo default event")
 
-    if split.get("audit_start") and split.get("audit_end"):
-        audit_start = date.fromisoformat(split["audit_start"])
-        audit_end = date.fromisoformat(split["audit_end"])
+    audit_start = split.get("audit_start")
+    audit_end = split.get("audit_end")
+    if audit_start and audit_end:
+        audit_start = date.fromisoformat(audit_start)
+        audit_end = date.fromisoformat(audit_end)
         audit_nws_events = [
             (event_date, event_id)
             for event_date, event_id, markets in dated_events
@@ -91,12 +94,16 @@ def make_handler(svc, cfg):
                     return self._send(200, PAGE.read_bytes(), "text/html; charset=utf-8")
                 if u.path == "/api/events":
                     evs = []
+                    split = cfg["split"]
+                    event_end = split.get("audit_end") or split["test_end"]
+                    default_events = {}
                     for e in sorted(svc.src.events):
                         d = contracts.event_date_from_ticker(e)
-                        if d and cfg["split"]["dev_start"] <= d.isoformat() <= cfg["split"]["audit_end"]:
+                        if d and split["dev_start"] <= d.isoformat() <= event_end:
                             evs.append({"event_id": e, "event_date": d.isoformat(), "split": split_of(cfg, d)})
+                            default_events[e] = svc.src.events[e]
                     return self._send(200, {"events": evs, "model_id": f"{svc.state['experiment_id']}.{svc.family}@{svc.state['fit_boundary']}",
-                                            "golden": default_event(cfg, svc.src.events)})
+                                            "golden": default_event(cfg, default_events)})
                 if u.path == "/api/replay":
                     r = svc.replay(q["event"], q.get("as_of", "08:00"), drop_last_quote=q.get("drop_last_quote") == "1",
                                    weather_delay_h=float(q.get("weather_delay_h", 0) or 0))

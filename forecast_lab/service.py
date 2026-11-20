@@ -34,7 +34,9 @@ def split_of(cfg, d):
     sp = cfg["split"]
     if date.fromisoformat(sp["test_start"]) <= d <= date.fromisoformat(sp["test_end"]):
         return "test"
-    if date.fromisoformat(sp["audit_start"]) <= d <= date.fromisoformat(sp["audit_end"]):
+    audit_start = sp.get("audit_start")
+    audit_end = sp.get("audit_end")
+    if audit_start and audit_end and date.fromisoformat(audit_start) <= d <= date.fromisoformat(audit_end):
         return "audit/golden (development, never fit)"
     if d < date.fromisoformat(sp["test_start"]):
         return "development"

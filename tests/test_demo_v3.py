@@ -1,7 +1,9 @@
 import gzip
 import json
 import threading
+from datetime import date
 from http.server import ThreadingHTTPServer
+from pathlib import Path
 from types import SimpleNamespace
 from urllib.request import urlopen
 
@@ -10,6 +12,8 @@ import pytest
 from forecast_lab import __main__ as cli
 from forecast_lab.config import load as load_config
 from forecast_lab.demo import default_event, make_handler
+from forecast_lab.fetch import FetchError
+from forecast_lab.service import ReplayService, load_state
 
 
 class DemoService:
@@ -74,3 +78,48 @@ def test_showcase_reads_gzipped_evaluation_rows(tmp_path):
     assert body["available"] is True
     assert body["favourable"] == "KXHIGHNY-26JUL15"
     assert body["failure"] == "KXHIGHNY-26JUL16"
+
+
+def test_chi_demo_events_and_development_replay_without_audit_window():
+    cfg = load_config("configs/v3-chi-0800.toml")
+    state_path = Path(cfg["paths"]["work_dir"]) / "models" / (
+        f"{cfg['experiment_id']}@{cfg['split']['test_start']}.json"
+    )
+    features_path = Path(cfg["paths"]["work_dir"]) / "dataset" / "features.jsonl"
+    if not Path(cfg["paths"]["cache_dir"]).is_dir() or not state_path.is_file() or not features_path.is_file():
+        pytest.skip("v3 CHI cache and fitted state are required for the offline demo test")
+
+    try:
+        state, family = load_state(
+            cfg, f"{cfg['experiment_id']}.adaptive_blend@{cfg['split']['test_start']}"
+        )
+        svc = ReplayService(cfg, state, family)
+    except FetchError as exc:
+        if exc.failure_class == "offline_cache_miss":
+            pytest.skip("v3 CHI raw cache is incomplete for the offline demo test")
+        raise
+
+    event_id = "KXHIGHCHI-26FEB09"
+    assert date.fromisoformat("2026-02-09") < date.fromisoformat(cfg["split"]["test_start"])
+    assert event_id in svc.src.events
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(svc, cfg))
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        with urlopen(f"http://127.0.0.1:{server.server_port}/api/events", timeout=5) as response:
+            events_body = json.loads(response.read())
+            assert response.status == 200
+        assert events_body["golden"] in {row["event_id"] for row in events_body["events"]}
+        assert any(row["event_id"] == event_id and row["split"] == "development"
+                   for row in events_body["events"])
+
+        with urlopen(f"http://127.0.0.1:{server.server_port}/api/replay?event={event_id}", timeout=10) as response:
+            replay_body = json.loads(response.read())
+            assert response.status == 200
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+    assert replay_body["event_id"] == event_id
+    assert replay_body["split"].startswith("development")

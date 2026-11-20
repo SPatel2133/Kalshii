@@ -141,6 +141,7 @@
     const revealButton = document.getElementById("reveal");
     const statusNode = document.getElementById("reveal-status");
     let events = [];
+    let probabilityFloor = 0;
     let outcomesCache = null;
     let revealedWinner = null;
     let isRevealed = false;
@@ -173,6 +174,12 @@
 
     function familyLabel(family) {
       return FAMILY_LABELS[family] || family.replaceAll("_", " ").replace(/\b\w/g, letter => letter.toUpperCase());
+    }
+
+    function logLoss(vector, winnerIndex) {
+      const floored = vector.map(probability => Math.max(probability, probabilityFloor));
+      const total = floored.reduce((sum, probability) => sum + probability, 0);
+      return -Math.log(floored[winnerIndex] / total);
     }
 
     function addCell(row, text, className = "", title = "") {
@@ -272,7 +279,7 @@
             row,
             probability === undefined
               ? missingPooled ? "n/a" : "—"
-              : (-Math.log(Math.max(probability, 1e-6))).toFixed(3),
+              : logLoss(event.probs[family], winnerIndex).toFixed(3),
             probability === undefined ? "dash" : "",
             missingPooled ? "NYC is not in the 5-city pool" : ""
           );
@@ -303,6 +310,10 @@
       const response = await fetch("data/events.json");
       if (!response.ok) throw new Error("Could not load replay events.");
       const payload = await response.json();
+      if (!Number.isFinite(payload.prob_floor) || payload.prob_floor <= 0) {
+        throw new Error("The replay data has no valid probability floor.");
+      }
+      probabilityFloor = payload.prob_floor;
       events = payload.events;
       const cities = [...new Map(events.map(event => [event.city, event.city_name]))];
       for (const [city, name] of cities) {

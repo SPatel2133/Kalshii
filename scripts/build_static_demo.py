@@ -60,6 +60,16 @@ def read_config(path):
         return tomllib.load(stream)
 
 
+def shared_probability_floor():
+    floors = {
+        read_config(ROOT / f"configs/v3-{city}-0800.toml")["models"]["prob_floor"]
+        for city in (*CITY_CODES, "nyc")
+    }
+    if len(floors) != 1:
+        raise ValueError("static demo city configs must share a probability floor")
+    return floors.pop()
+
+
 def source_manifest(paths):
     manifest = []
     for relative_path in sorted(set(paths)):
@@ -195,6 +205,7 @@ def golden_event(source_paths):
 
 def build(output_dir):
     source_paths = []
+    prob_floor = shared_probability_floor()
     pooled_path = ROOT / "evidence/v3/pooled/predictions.jsonl.gz"
     source_paths.append("evidence/v3/pooled/predictions.jsonl.gz")
     pooled_rows = {}
@@ -220,6 +231,7 @@ def build(output_dir):
     all_events = [golden, *sorted(all_events, key=lambda event: (event["city"], event["event_date"]))]
     outcomes[golden["event_id"]] = {"winner_bucket": winner}
     payload = {
+        "prob_floor": prob_floor,
         "source": source_manifest(source_paths),
         "events": all_events,
     }

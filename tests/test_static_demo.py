@@ -1,8 +1,13 @@
+import gzip
 import json
+import math
 import re
 import subprocess
 import sys
+import tomllib
 from pathlib import Path
+
+from forecast_lab.evaluation import score
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT / "docs/demo/data"
@@ -116,3 +121,57 @@ def test_outcomes_match_the_event_set_and_golden_fixture():
     assert set(outcomes) == {event["event_id"] for event in payload["events"]}
     assert all(set(outcome) == {"winner_bucket"} for outcome in outcomes.values())
     assert outcomes[GOLDEN_EVENT_ID]["winner_bucket"] == fixture["label"]["winner_bucket"] == "85-86"
+
+
+def test_demo_probability_floor_matches_all_city_configs():
+    floors = []
+    for city in ("chi", "mia", "aus", "lax", "phil", "nyc"):
+        config_path = ROOT / f"configs/v3-{city}-0800.toml"
+        config = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        floors.append(config["models"]["prob_floor"])
+
+    assert len(set(floors)) == 1
+    payload = json.loads((DATA_DIR / "events.json").read_text(encoding="utf-8"))
+    assert payload["prob_floor"] == floors[0]
+
+
+def test_reveal_log_loss_matches_committed_evaluation_rows():
+    payload = json.loads((DATA_DIR / "events.json").read_text(encoding="utf-8"))
+    outcomes = json.loads((DATA_DIR / "outcomes.json").read_text(encoding="utf-8"))
+    events_by_id = {event["event_id"]: event for event in payload["events"]}
+    selected_events = [events_by_id["KXHIGHPHIL-26APR04"]]
+    selected_events.extend(
+        next(event for event in payload["events"] if event["city"] == city)
+        for city in ("chi", "mia", "aus", "lax")
+    )
+
+    evaluation_rows = {}
+    for event in selected_events:
+        path = ROOT / f"evidence/v3/{event['city']}-0800/eval-test/evaluation_rows.jsonl.gz"
+        with gzip.open(path, "rt", encoding="utf-8") as stream:
+            for line in stream:
+                row = json.loads(line)
+                if row.get("event_id") == event["event_id"] and row.get("mode") == "model":
+                    evaluation_rows.setdefault(event["event_id"], {})[row["family"]] = row
+
+    for event in selected_events:
+        event_id = event["event_id"]
+        winner = outcomes[event_id]["winner_bucket"]
+        bucket_ids = [bucket["bucket_id"] for bucket in event["buckets"]]
+        winner_index = bucket_ids.index(winner)
+        expected_families = set(event["probs"]) - {"market_recal_pooled"}
+        assert expected_families <= set(evaluation_rows[event_id])
+
+        for family, probabilities in event["probs"].items():
+            floored = [max(probability, payload["prob_floor"]) for probability in probabilities]
+            total = sum(floored)
+            log_loss = -math.log(floored[winner_index] / total)
+            assert abs(
+                log_loss - score(probabilities, winner_index, payload["prob_floor"])["log_loss"]
+            ) < 1e-12
+
+            if family in expected_families:
+                assert abs(log_loss - evaluation_rows[event_id][family]["log_loss"]) < 1e-4
+
+            if event_id == "KXHIGHPHIL-26APR04" and family == "weather":
+                assert f"{log_loss:.3f}" == "9.211"

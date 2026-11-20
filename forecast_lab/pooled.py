@@ -405,10 +405,6 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
         city_data[city] = {"features": features, "labels": labels}
 
     validate_city_oof_boundaries(oof_by_city, city_configs)
-    all_dev_rows = {
-        city: [row for rows in dev_rows.values() for row in rows]
-        for city in city_configs
-    }
     combined_oof = []
     combined_features, combined_labels = {}, {}
     fold_alpha_table = {}
@@ -424,7 +420,7 @@ def pooled_dev_stage(pool_cfg, preregistration_sha):
         alpha = state["upstream"]["recal"]["alpha"]
         city_alpha[city] = alpha
         fold_alphas = fold_alphas_for_city(
-            city, cfg, oof_by_city[city], all_dev_rows, cfg["models"]["prob_floor"])
+            city, cfg, oof_by_city[city], dev_rows, cfg["models"]["prob_floor"])
         fold_alpha_table[city] = fold_alphas
         pooled_rows = pooled_oof_rows(city, cfg, oof_by_city[city],
                                       city_data[city]["features"], fold_alphas)

@@ -216,9 +216,11 @@ def cmd_evaluate(args):
 def cmd_golden(args):
     """Write the golden replay fixture (derived pre-cutoff fields + frozen predictions) for regression tests."""
     cfg = _cfg(args)
+    ev = cfg["split"].get("golden_event")
+    if not ev:
+        raise SystemExit("golden command requires split.golden_event (available in v1/v2 configs)")
     st, fam = load_state(cfg, args.model)
     svc = ReplayService(cfg, st, fam)
-    ev = cfg["split"]["golden_event"]
     r = svc.replay(ev)
     rev = svc.reveal(ev)
     selected = r["weather"]["selected"]

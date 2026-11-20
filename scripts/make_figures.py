@@ -14,6 +14,15 @@ OUTPUT = ROOT / "docs" / "figures"
 CITY_CODES = ("chi", "mia", "aus", "lax", "phil")
 CUTOFFS = ("0800", "1100", "1400")
 LOGLOSS_FAMILIES = ("market_raw", "market_recal", "fixed_blend", "weather")
+DISPLAY_LABELS = {
+    "market_raw": "Market (raw)",
+    "market_recal": "Market (recalibrated)",
+    "fixed_blend": "Fixed blend",
+    "weather": "Weather model",
+    "adaptive_blend": "Adaptive blend",
+    "favourite_yes": "Buy favourite",
+    "market_recal_pooled": "Recalibrated market (pooled α)",
+}
 
 matplotlib.rcParams["svg.hashsalt"] = "kalshi"
 matplotlib.rcParams["svg.fonttype"] = "none"
@@ -39,7 +48,7 @@ def pooled_logloss(cutoff):
 def save(fig, name):
     path = OUTPUT / name
     fig.tight_layout()
-    fig.savefig(path, format="svg", metadata={"Date": None})
+    fig.savefig(path, format="svg", bbox_inches="tight", metadata={"Date": None})
     plt.close(fig)
 
 
@@ -60,7 +69,7 @@ def make_logloss_figure():
     labels = [f"{cutoff[:2]}:{cutoff[2:]}" for cutoff in CUTOFFS]
     fig, ax = plt.subplots(figsize=(7.2, 4.5))
     for family in LOGLOSS_FAMILIES:
-        ax.plot(x, [values[cutoff][family] for cutoff in CUTOFFS], marker="o", label=family)
+        ax.plot(x, [values[cutoff][family] for cutoff in CUTOFFS], marker="o", label=DISPLAY_LABELS[family])
     ax.set_xticks(list(x), labels)
     ax.set_xlabel("Local cutoff")
     ax.set_ylabel("Mean log loss")
@@ -117,7 +126,7 @@ def make_pnl_figure():
     fig, ax = plt.subplots(figsize=(8, 5))
     ax.errorbar(means, range(len(strategies)), xerr=[lower, upper], fmt="o", capsize=4, linewidth=1.5)
     ax.axvline(0, color="black", linewidth=1)
-    ax.set_yticks(range(len(strategies)), strategies)
+    ax.set_yticks(range(len(strategies)), [DISPLAY_LABELS[strategy] for strategy in strategies])
     ax.set_xlabel("Mean P&L per event, $ per 1-contract unit, after fees")
     ax.set_title("Pooled 08:00 test P&L by strategy (fee 1×)")
     ax.grid(axis="x", alpha=0.25)

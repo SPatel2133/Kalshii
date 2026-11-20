@@ -2,13 +2,48 @@ import gzip
 import json
 import threading
 from http.server import ThreadingHTTPServer
+from types import SimpleNamespace
 from urllib.request import urlopen
 
-from forecast_lab.demo import make_handler
+import pytest
+
+from forecast_lab import __main__ as cli
+from forecast_lab.config import load as load_config
+from forecast_lab.demo import default_event, make_handler
 
 
 class DemoService:
     family = "adaptive_blend"
+
+
+def test_default_event_prefers_configured_golden():
+    cfg = {"split": {"golden_event": "KXHIGHNY-26AUG13"}}
+    assert default_event(cfg, {}) == "KXHIGHNY-26AUG13"
+
+
+def test_default_event_uses_latest_nws_event_in_audit_window():
+    cfg = load_config("configs/v3-nyc-0800.toml")
+    events = {
+        "KXHIGHNY-26AUG12": [{"rules_primary": "The Weather Company"}],
+        "KXHIGHNY-26AUG13": [{"rules_primary": "National Weather Service"}],
+        "KXHIGHNY-26AUG14": [{"rules_primary": "The Weather Company"}],
+    }
+    assert default_event(cfg, events) == "KXHIGHNY-26AUG13"
+
+
+def test_default_event_falls_back_to_latest_event():
+    cfg = {"split": {"audit_start": "2026-08-01", "audit_end": "2026-08-13"}}
+    events = {
+        "KXHIGHNY-26AUG12": [{"rules_primary": "The Weather Company"}],
+        "KXHIGHNY-26AUG14": [{"rules_primary": "The Weather Company"}],
+    }
+    assert default_event(cfg, events) == "KXHIGHNY-26AUG14"
+
+
+def test_golden_command_exits_clearly_without_golden_event(monkeypatch):
+    monkeypatch.setattr(cli, "_cfg", lambda args: {"split": {}})
+    with pytest.raises(SystemExit, match="golden command requires split.golden_event"):
+        cli.cmd_golden(SimpleNamespace())
 
 
 def test_showcase_reads_gzipped_evaluation_rows(tmp_path):

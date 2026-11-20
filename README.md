@@ -21,7 +21,7 @@ Research only: public read-only data, no trading, no credentials.
 |---|---|---|
 | [v1](evidence/nyc-0800-v1/REPORT.md) NYC, 287 events | Does an adaptive market + weather blend beat a fixed blend? | No: Δ = +0.0001 nats, 95% CI [−0.00005, +0.0003]. The fixed blend puts 100% weight on the market. |
 | [v2](evidence/nyc-0800-v2/REPORT.md) NYC, 287 events | Do a full-day forecast proxy and morning observations help? | Weather model improves by 0.16 nats (CI [−0.22, −0.10]), but it still trails the market (1.44 vs 0.99), and blends stay ≈ market. |
-| [v3](evidence/v3/REPORT.md) 5 new cities, 1,140 events | Pre-registered: does sharpening market odds (p^α, α ≈ 1.2) help, and is it profitable after fees? | Log loss Δ = −0.0063, CI [−0.0146, +0.0016]: not supported. P&L = −$0.0010 per event, CI [−0.0049, +0.0028]: no supported profit. |
+| [v3](evidence/v3/REPORT.md) 5 new cities, 1,140 events | Pre-registered: does sharpening market odds (p^α, α ≈ 1.2) help, and is it profitable after fees? | Log loss Δ = −0.0063, CI [−0.0146, +0.0016]: not supported. P&L = −$0.0010 per event, CI [−0.0049, +0.0028]: no supported profit. A post-hoc leak-free rerun (pooled fit only on data before the first test day) agrees. |
 
 <p align="center">
   <img src="docs/figures/pnl_0800.svg" width="48%" alt="Paper P&L per strategy after fees">

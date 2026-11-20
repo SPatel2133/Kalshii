@@ -246,6 +246,117 @@ def test_pooled_alpha_uses_all_prior_city_rows_and_excludes_late_settlements():
     assert state["n"] == 2
 
 
+def test_pooled_dev_stage_counts_each_city_fold_fit_row_once(tmp_path, monkeypatch):
+    config_paths = ("chi.toml", "mia.toml")
+    city_configs = {}
+    model_dirs = {}
+    dev_rows = {}
+    for city in ("chi", "mia"):
+        experiment_id = f"v3-{city}-0800"
+        cfg = {
+            "experiment_id": experiment_id,
+            "_sha256": f"config-{city}",
+            "cutoff_local": "08:00",
+            "timezone": "America/New_York",
+            "split": {"test_start": "2026-01-03", "test_end": "2026-01-04"},
+            "paths": {"work_dir": str(tmp_path / city / "work")},
+            "models": {"prob_floor": 1e-6},
+            "backtest": {"margins": [0.0], "fee_rate": 0.07, "contracts": 1},
+        }
+        city_configs[f"{city}.toml"] = cfg
+        model_dir = tmp_path / city / "models"
+        model_dirs[experiment_id] = model_dir
+        model_state = {
+            "fit_boundary": cfg["split"]["test_start"],
+            "config_sha256": cfg["_sha256"],
+            "state_sha256": f"state-{city}",
+            "upstream": {
+                "recal": {"alpha": 1.1},
+                "train_event_ids_sha256": f"train-{city}",
+            },
+        }
+        pooled.write_json(
+            model_dir / f"{experiment_id}@{cfg['split']['test_start']}.json", model_state
+        )
+        pooled.write_jsonl(
+            model_dir / f"{experiment_id}@{cfg['split']['test_start']}.oof.jsonl",
+            [{
+                "event_id": f"{city}-oof",
+                "event_date": "2025-12-20",
+                "family": "market_raw",
+                "fold": "1",
+                "mode": "model",
+            }],
+        )
+        pooled.write_json(
+            model_dir / f"{experiment_id}@{cfg['split']['test_start']}.backtest.json",
+            {"selected": {"market_raw": 0.0}},
+        )
+        dev_rows[experiment_id] = [
+            {
+                "event_id": f"{city}-dev-{index}",
+                "event_date": f"2025-12-{day:02d}",
+                "settled_at_utc": "2025-12-20T12:00:00Z",
+                "mids": [0.6, 0.4],
+                "winner_index": 0,
+            }
+            for index, day in enumerate((1, 10), start=1)
+        ]
+
+    monkeypatch.setattr(pooled.C, "load", lambda path: city_configs[path])
+    monkeypatch.setattr(pooled, "models_dir", lambda cfg: model_dirs[cfg["experiment_id"]])
+    monkeypatch.setattr(pooled.E, "load_dataset", lambda _: ({}, {}, []))
+    monkeypatch.setattr(
+        pooled,
+        "development_market_rows",
+        lambda cfg, features, labels, state: (
+            dev_rows[cfg["experiment_id"]],
+            [row["event_id"] for row in dev_rows[cfg["experiment_id"]]],
+        ),
+    )
+    monkeypatch.setattr(
+        pooled.M,
+        "fit_recal_scalar",
+        lambda mids, winners, floor: {
+            "alpha": 1.0,
+            "converged": True,
+            "nll": 0.0,
+            "n": len(mids),
+        },
+    )
+    monkeypatch.setattr(pooled, "pooled_oof_rows", lambda *args: [])
+    monkeypatch.setattr(
+        pooled,
+        "_select_pooled_margin_for_pool",
+        lambda *args: {
+            "selected": {"market_recal_pooled": 0.05},
+            "dev_oof_pnl": {"market_recal_pooled": {"0.05": 0.0}},
+            "common_oof_events": 1,
+        },
+    )
+
+    state = pooled.pooled_dev_stage(
+        {
+            "city_configs": config_paths,
+            "split": {"test_start": "2026-01-03", "test_end": "2026-01-04"},
+            "output_dir": str(tmp_path / "pooled"),
+        },
+        "preregistration",
+    )
+
+    distinct_eligible = {
+        row["event_id"]
+        for rows in dev_rows.values()
+        for row in rows
+        if row["event_date"] < "2025-12-20" and row["settled_at_utc"] < "2025-12-20T13:00:00Z"
+    }
+    assert len(distinct_eligible) == 4
+    assert {
+        city: state["fold_alpha"][city]["1"]["fit"]["n"]
+        for city in ("chi", "mia")
+    } == {city: len(distinct_eligible) for city in ("chi", "mia")}
+
+
 def test_pooled_alpha_uses_concatenated_city_development_rows():
     state = pooled.fit_pooled_alpha({
         "chi": [{"mids": [0.8, 0.2], "winner_index": 0}],

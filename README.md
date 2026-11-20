@@ -1,19 +1,22 @@
-# Kalshi Forecast Lab
+# Whether?
 
-[![CI](https://github.com/SPatel2133/Kalshii/actions/workflows/ci.yml/badge.svg)](https://github.com/SPatel2133/Kalshii/actions/workflows/ci.yml)
+Can a model beat Kalshi weather markets?
 
-**Can a weather model beat a prediction market on its own turf, and could you make money doing it?**
+**A well-measured null:** Pre-registered on 1,140 events in 5 cities, recalibration Δ = −0.0063 nats [−0.0146, +0.0016] was not supported. No supported profit after fees: −$0.0010/event [−$0.0049, +$0.0028].
+
+![Paper P&L per strategy after fees](docs/figures/pnl_0800.svg)
+
+[Live demo](https://spatel2133.github.io/whether/demo/) · [Full report](evidence/v3/REPORT.md)
+
+[![CI](https://github.com/SPatel2133/whether/actions/workflows/ci.yml/badge.svg)](https://github.com/SPatel2133/whether/actions/workflows/ci.yml)
+
+Research only: public read-only data, no trading, no credentials.
 
 Kalshi lists daily contracts on each city's high temperature. This project rewinds every historical market to a fixed
 morning cutoff. It rebuilds exactly what was knowable then: order-book quotes, the latest NWS forecast that had been
 published, and observations so far. It then compares the market against weather models, learned blends, and fee-aware paper
-trading strategies, all under pre-registered, leakage-guarded evaluation.
-
-**Answer, from three versioned experiments:** no. Across 6 cities and about 1,400 held-out events, nothing beat the market by a
-meaningful margin, and no strategy made supported money after Kalshi's fees. Building the measurement carefully enough to
+trading strategies, all under pre-registered, leakage-guarded evaluation. Building the measurement carefully enough to
 trust a null result is the point of the project.
-
-Research only: public read-only data, no trading, no credentials.
 
 ## Results
 
@@ -22,11 +25,6 @@ Research only: public read-only data, no trading, no credentials.
 | [v1](evidence/nyc-0800-v1/REPORT.md) NYC, 287 events | Does an adaptive market + weather blend beat a fixed blend? | No: Δ = +0.0001 nats, 95% CI [−0.00005, +0.0003]. The fixed blend puts 100% weight on the market. |
 | [v2](evidence/nyc-0800-v2/REPORT.md) NYC, 287 events | Do a full-day forecast proxy and morning observations help? | Weather model improves by 0.16 nats (CI [−0.22, −0.10]), but it still trails the market (1.44 vs 0.99), and blends stay ≈ market. |
 | [v3](evidence/v3/REPORT.md) 5 new cities, 1,140 events | Pre-registered: does sharpening market odds (p^α, α ≈ 1.2) help, and is it profitable after fees? | Log loss Δ = −0.0063, CI [−0.0146, +0.0016]: not supported. P&L = −$0.0010 per event, CI [−0.0049, +0.0028]: no supported profit. A post-hoc leak-free rerun (pooled fit only on data before the first test day) agrees. |
-
-<p align="center">
-  <img src="docs/figures/pnl_0800.svg" width="48%" alt="Paper P&L per strategy after fees">
-  <img src="docs/figures/logloss_by_cutoff.svg" width="48%" alt="Log loss by cutoff">
-</p>
 
 The weather model loses money (−$0.053 per event), and buying the favourite breaks even before fees but loses after them.
 Later in the day the market's lead over the weather model *grows*, from 0.46 to 0.62 nats. The exploratory 14:00 cutoff shows

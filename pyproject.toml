@@ -1,5 +1,5 @@
 [project]
-name = "forecast-lab"
+name = "whether"
 version = "0.1.0"
 description = "Kalshi Forecast Lab: replay KXHIGHNY at 08:00 New York, compare market, weather and learned forecasts"
 requires-python = ">=3.11"

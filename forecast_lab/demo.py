@@ -24,7 +24,7 @@ PAGE = Path(__file__).with_name("demo.html")
 def make_handler(svc, cfg):
     def showcase():
         p = Path(cfg["paths"]["evidence_dir"]) / "eval-test" / "evaluation_rows.jsonl"
-        if not p.exists():
+        if not p.exists() and not Path(str(p) + ".gz").exists():
             return {"available": False}
         rows = read_jsonl(p)
         by = {}

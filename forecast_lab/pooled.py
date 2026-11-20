@@ -18,6 +18,11 @@ from .service import models_dir
 from .util import read_bytes_maybe_gz, read_jsonl, sha256_bytes, write_json, write_jsonl
 
 
+def _pooled_is_exploratory(pool_cfg, city_configs):
+    return (any(cfg["cutoff_local"] != "08:00" for cfg in city_configs.values())
+            or pool_cfg.get("exploratory", False))
+
+
 def fit_pooled_alpha(dev_rows, floor):
     rows = [row for city_rows in dev_rows.values() for row in city_rows]
     if not rows:
@@ -706,7 +711,7 @@ def pooled_test_stage(pool_cfg, preregistration_sha):
     output_summary = {
         "experiment_id": "v3-pooled",
         "stage": "test",
-        "exploratory": False,
+        "exploratory": _pooled_is_exploratory(pool_cfg, city_configs),
         "pre_registration_sha": preregistration_sha,
         "window": [pool_start.isoformat(), pool_end.isoformat()],
         "pooled_state_sha256": sha256_bytes(pooled_state_path.read_bytes()),

@@ -6,6 +6,18 @@ from forecast_lab import pooled as P
 from forecast_lab.replay import market_vector
 
 
+@pytest.mark.parametrize(
+    "pool_cfg,city_configs,expected",
+    [
+        ({}, {"chi": {"cutoff_local": "08:00"}}, False),
+        ({}, {"chi": {"cutoff_local": "11:00"}}, True),
+        ({"exploratory": True}, {"chi": {"cutoff_local": "08:00"}}, True),
+    ],
+)
+def test_pooled_exploratory_uses_city_cutoffs_and_pool_override(pool_cfg, city_configs, expected):
+    assert P._pooled_is_exploratory(pool_cfg, city_configs) is expected
+
+
 def _feature(event_id="KXHIGHCHI-26AUG13", mids=(0.2, 0.5, 0.3)):
     return {
         "event_id": event_id,
